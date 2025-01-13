@@ -9,9 +9,6 @@
         "intervention/image": "^3.9",
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
-        "setasign/fpdi": "^2.6",
-        "spatie/pdf-to-image": "^1.2",
-        "tecnickcom/tcpdf": "^6.7",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },
     "require-dev": {
