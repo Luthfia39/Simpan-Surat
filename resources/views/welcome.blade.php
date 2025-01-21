@@ -16,6 +16,13 @@
             max-width: 300px;
             margin-top: 20px;
         }
+
+        #previewsContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -53,7 +60,6 @@
                     onchange="previewImages(event)">
                 <button type="submit" class="btn btn-primary mt-3">Upload</button>
             </form>
-            <div id="previews" class="mt-3"></div>
         </div>
 
         <!-- Container for uploading images on desktop -->
@@ -63,8 +69,10 @@
                 <input type="file" name="images[]" accept="image/*" multiple onchange="previewImages(event)">
                 <button type="submit" class="btn btn-primary mt-3">Upload</button>
             </form>
-            <div id="previews" class="mt-3"></div>
         </div>
+
+        <!-- Shared Preview Container -->
+        <div id="previewsContainer" class="mt-3"></div>
 
         <!-- Display Errors -->
         @if (session('error'))
@@ -94,20 +102,31 @@
 
         function previewImages(event) {
             const files = event.target.files;
-            const previewsContainer = document.getElementById('previews');
+            const previewsContainer = document.getElementById('previewsContainer');
             previewsContainer.innerHTML = ''; // Clear previous previews
 
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'preview-container';
+
                     const img = document.createElement('img');
                     img.src = e.target.result;
-                    img.className = 'preview';
-                    previewsContainer.appendChild(img);
-                    img.style.display = 'block';
+                    img.className = 'preview img-fluid rounded';
+                    img.alt = 'Preview';
+
+                    imgContainer.appendChild(img);
+                    previewsContainer.appendChild(imgContainer);
+                };
+                reader.onerror = function(error) {
+                    console.error('Error reading file:', error);
                 };
                 reader.readAsDataURL(file);
             });
+
+            // Make sure preview container is visible
+            previewsContainer.classList.remove('d-none');
         }
 
         function closeModal() {

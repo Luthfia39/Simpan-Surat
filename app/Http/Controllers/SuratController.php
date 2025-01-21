@@ -123,7 +123,7 @@ class SuratController extends Controller
             $filePath = storage_path('app/public/' . $file);
             $text = (new TesseractOCR($filePath))->run();
             $combinedText .= $text . "\n";
-            // Storage::disk('public')->delete($file); // Delete the image after processing
+            Storage::disk('public')->delete($file); // Delete the image after processing
         }
 
         return $combinedText;
