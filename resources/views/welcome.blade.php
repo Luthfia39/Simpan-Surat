@@ -2,12 +2,11 @@
 <html>
 
 <head>
-    <title>Ekstrak Dokumen</title>
+    <title>Image Upload/Capture</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
     <style>
         .preview {
@@ -28,25 +27,24 @@
 
 <body class="bg-light">
     <div class="container">
-        <h1 class="text-center my-4">Scan Dokumen</h1>
+        <h1 class="text-center my-4">Upload or Capture Images</h1>
 
-        <button id="showModalButton" class="btn btn-primary d-none" onclick="showModal()">Unggah Gambar</button>
+        <button id="showModalButton" class="btn btn-primary d-none" onclick="showModal()">Upload or Capture
+            Image</button>
 
         <!-- Modal -->
         <div id="uploadModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel"
             aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="uploadModalLabel">Pilih Metode Unggahan</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                    <div class="modal-header d-flex justify-content-between">
+                        <h5 class="modal-title" id="uploadModalLabel">Choose Upload Method</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Silakan pilih metode untuk mengunggah gambar:</p>
-                        <button type="button" class="btn btn-primary mr-2" onclick="showUpload()">Unggah File</button>
-                        <button type="button" class="btn btn-success" onclick="showCapture()">Ambil Gambar</button>
+                        <p>Please choose a method to upload images:</p>
+                        <button type="button" class="btn btn-primary mr-2" onclick="showUpload()">Upload File</button>
+                        <button type="button" class="btn btn-success" onclick="showCapture()">Capture Image</button>
                     </div>
                 </div>
             </div>
@@ -54,42 +52,32 @@
 
         <!-- Container for capturing images on mobile/tablet -->
         <div id="captureContainer" class="d-none">
-            <form action="/scan" method="post" enctype="multipart/form-data">
+            <form action="{{ route('scan') }}" method="post" enctype="multipart/form-data">
                 @csrf
-                <input type="file" name="images[]" accept="image/*" capture="environment" multiple
-                    onchange="previewImages(event)">
+                <input type="file" id="captureInput" name="images[]" accept="image/*" capture="environment" multiple
+                    onchange="previewImages(event, true)">
+                <button type="button" class="btn btn-secondary mt-3" onclick="addMoreCaptures()">Capture Image</button>
                 <button type="submit" class="btn btn-primary mt-3">Upload</button>
             </form>
+            <div id="previewsCapture" class="mt-3"></div>
         </div>
 
         <!-- Container for uploading images on desktop -->
         <div id="uploadContainer">
-            <form action="/scan" method="post" enctype="multipart/form-data">
+            <form action="{{ route('scan') }}" method="post" enctype="multipart/form-data">
                 @csrf
-                <input type="file" name="images[]" accept="image/*" multiple onchange="previewImages(event)">
+                <input type="file" name="images[]" accept="image/*" multiple onchange="previewImages(event, false)">
                 <button type="submit" class="btn btn-primary mt-3">Upload</button>
             </form>
+            <div id="previewsUpload" class="mt-3"></div>
         </div>
-
-        <!-- Shared Preview Container -->
-        <div id="previewsContainer" class="mt-3"></div>
-
-        <!-- Display Errors -->
-        @if (session('error'))
-            <p class="text-danger">{{ session('error') }}</p>
-        @endif
-
-        <!-- Display Results -->
-        @if (session('result'))
-            <h2 class="mt-4">Scan Results:</h2>
-            <pre class="bg-light p-3 rounded">{{ print_r(session('result'), true) }}</pre>
-        @endif
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -100,33 +88,30 @@
             }
         });
 
-        function previewImages(event) {
+        function previewImages(event, upload) {
             const files = event.target.files;
-            const previewsContainer = document.getElementById('previewsContainer');
-            previewsContainer.innerHTML = ''; // Clear previous previews
+            const previewsContainerUpload = document.getElementById('previewsUpload');
+            const previewsContainerCapture = document.getElementById('previewsCapture');
+            previewsContainerUpload.innerHTML = ''; // Clear previous previews
+            // previewsContainerCapture.innerHTML = ''; // Clear previous previews
 
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'preview-container';
-
                     const img = document.createElement('img');
                     img.src = e.target.result;
-                    img.className = 'preview img-fluid rounded';
-                    img.alt = 'Preview';
+                    img.className = 'preview';
+                    if (upload) {
+                        previewsContainerCapture.appendChild(img);
+                    }
+                    if (!upload) {
+                        previewsContainerUpload.appendChild(img);
+                    }
 
-                    imgContainer.appendChild(img);
-                    previewsContainer.appendChild(imgContainer);
-                };
-                reader.onerror = function(error) {
-                    console.error('Error reading file:', error);
+                    img.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
             });
-
-            // Make sure preview container is visible
-            previewsContainer.classList.remove('d-none');
         }
 
         function closeModal() {
@@ -147,6 +132,13 @@
             document.getElementById('captureContainer').classList.remove('d-none');
             closeModal();
             document.getElementById('showModalButton').classList.add('d-none');
+        }
+
+        function addMoreCaptures() {
+            const captureInput = document.getElementById('captureInput');
+            captureInput.disabled = false;
+            captureInput.click();
+            captureInput.disabled = true;
         }
     </script>
 </body>
