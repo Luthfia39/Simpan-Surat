@@ -104,7 +104,7 @@ class SuratController extends Controller
 
         foreach ($files as $file) {
             $filePath = storage_path('app/public/' . $file);
-            $text = (new TesseractOCR($filePath))->run();
+            $text = (new TesseractOCR($filePath))->lang('ind')->run();
             $combinedText .= $text . "\n";
             Storage::disk('public')->delete($file);
         }
