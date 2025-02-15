@@ -153,7 +153,7 @@
                                     <p class="upload-message text-muted mb-0">
                                         Klik atau seret file PDF di sini
                                     </p>
-                                    <input type="file" id="fileInput" name="document" class="d-none" accept=".pdf">
+                                    <input type="file" id="fileInput" name="files[]" class="d-none" accept=".pdf">
                                     
                                     <div id="preview" class="d-flex justify-content-center mt-4"></div>
                                 </div>
@@ -163,10 +163,20 @@
                                 <ul class="mb-0" id="errorList"></ul>
                             </div>
 
-                            @if (session('success'))
-                            <div class="alert alert-success mt-4 mb-0">
-                                {{ session('success') }}
-                            </div>
+                            @if (session('results'))
+                                <div class="alert alert-success mt-4 mb-0">
+                                    <pre>{{ json_encode(session('results')) }}</pre>
+                                    <p>--------------------------------------</p>
+                                    <p>Nomor surat :</p>
+
+                                    @if (session('no_letter'))
+                                        @foreach (session('no_letter') as $key => $value) 
+                                            <pre>{{ $value }}</pre>
+                                        @endforeach
+                                    @else
+                                        <p>Tidak ada nomor surat ditemukan.</p>
+                                    @endif
+                                </div>
                             @endif
 
                             <div class="text-center mt-4">
@@ -179,7 +189,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');

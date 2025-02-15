@@ -72,7 +72,12 @@ class SuratController extends Controller
             // Call preprocessImages() after conversion
             $results = $this->preprocessImages();
 
-            return redirect()->back()->with('result', $results);
+            $no_letter = $this->getData($results);
+
+            return redirect()->back()->with([
+                'results' => $results, 
+                'no_letter' => $no_letter
+            ]);
         }
 
         return redirect()->back()->with('success', 'Files uploaded successfully: ' . implode(', ', $paths));
@@ -110,5 +115,15 @@ class SuratController extends Controller
         }
 
         return $combinedText;
+    }
+
+    private function getData($letters) {
+        $cleanedText = str_replace('\/', '/', $letters);
+
+        // Updated regex pattern with debugging
+        $reg_number = "/(\d+\/UNI1\/[A-Z0-9.-]+\/[A-Z]+\/[A-Z]+\/\d{4})/";
+        preg_match_all($reg_number, $cleanedText, $no_letter);
+
+        return $no_letter[0];
     }
 }
