@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::controller(SuratController::class)->group(function () {
     Route::get('/', [SuratController::class, 'index'])->name('home');
     Route::post('/scan', [SuratController::class, 'scan'])->name('scan');
+    Route::get('/coba', [SuratController::class, 'getData'])->name('data');
     // Route::post('/preprocess', [SuratController::class, 'preprocessImages'])->name('preprocess');
 });
 
