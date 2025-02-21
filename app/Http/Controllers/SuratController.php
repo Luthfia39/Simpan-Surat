@@ -5,16 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Intervention\Image\ImageManager;
 use thiagoalessio\TesseractOCR\TesseractOCR;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\File;
 use Spatie\PdfToImage\Pdf;
+use Imagick;
 
 class SuratController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         return view('welcome');
@@ -26,77 +22,37 @@ class SuratController extends Controller
             return redirect()->back()->with('error', 'No files uploaded.');
         }
 
-        $files = $request->file('files');
-        $paths = [];
-        $isPdf = false;
-        $isImage = false;
-        $latestPdfPath = null;
+        $file = $request->file('files');
 
-        foreach ($files as $file) {
-            if ($file->getClientOriginalExtension() === 'pdf') {
-                $isPdf = true;
-            } elseif (str_starts_with($file->getMimeType(), 'image/')) {
-                $isImage = true;
-            }
-        }
+        if ($file->getClientOriginalExtension() === 'pdf') {
+            $path = $file->store('pdfs', 'public');
+            $pdfPath = storage_path("app/public/{$path}");
 
-        // Prevent mixing PDFs and images
-        if ($isPdf && $isImage) {
-            return redirect()->back()->with('error', 'You cannot upload both images and PDFs at the same time.');
-        }
+            // Convert PDF to Images
+            $this->convertPdfToImages($pdfPath);
 
-        // Restrict to one PDF only
-        if ($isPdf && count($files) > 1) {
-            return redirect()->back()->with('error', 'Only one PDF file can be uploaded at a time.');
-        }
-
-        foreach ($files as $file) {
-            $path = $file->store($isPdf ? 'pdfs' : 'images', 'public');
-            $paths[] = $path;
-
-            // Store the most recent PDF path
-            if ($isPdf) {
-                $latestPdfPath = storage_path("app/public/{$path}");
-            }
-        }
-
-        if ($isImage) {
-            $results = $this->preprocessImages();
-            return redirect()->back()->with('result', $results);
-        }
-
-        if ($isPdf && $latestPdfPath) {
-            // Convert the most recent PDF to images
-            $this->convertPdfToImages($latestPdfPath);
-
-            // Call preprocessImages() after conversion
+            // Preprocess Images
             $results = $this->preprocessImages();
 
+            // Extract Data
             $no_letter = $this->getData($results);
 
             return redirect()->back()->with([
-                'results' => $results, 
+                'results' => $results,
                 'no_letter' => $no_letter
             ]);
         }
 
-        return redirect()->back()->with('success', 'Files uploaded successfully: ' . implode(', ', $paths));
+        return redirect()->back()->with('error', 'Invalid file type.');
     }
 
-
-    /**
-     * Convert PDF pages to images using Spatie PDF to Image library.
-     */
-    private function convertPdfToImages($pdfPath) {
+    private function convertPdfToImages($pdfPath)
+    {
         try {
             $pdf = new Pdf($pdfPath);
-
             Storage::disk('public')->makeDirectory('images');
             $imagePath = Storage::disk('public')->path("images");
-
             $pdf->saveAllPages($imagePath);
-
-            // return "Successfully convert pdf to images!";
         } catch (\Exception $e) {
             throw new \Exception('PDF to Image conversion failed: ' . $e->getMessage());
         }
@@ -109,12 +65,87 @@ class SuratController extends Controller
 
         foreach ($files as $file) {
             $filePath = storage_path('app/public/' . $file);
-            $text = (new TesseractOCR($filePath))->lang('ind')->run();
+            
+            // Preprocess image
+            // $processedImagePath = $this->preprocessImageWithImagick($filePath);
+
+            // Extract text using Tesseract
+            $text = (new TesseractOCR($filePath))
+            // $text = (new TesseractOCR($processedImagePath))
+                ->lang('ind')
+                ->psm(6) // Page segmentation mode for uniform text blocks
+                ->oem(1)
+                ->run();
+
             $combinedText .= $text . "\n";
-            Storage::disk('public')->delete($file);
+
+            // Cleanup processed images
+            // Storage::disk('public')->delete($file);
+            // unlink($processedImagePath);
         }
 
         return $combinedText;
+    }
+
+    // public function preprocessImageWithImagick()
+    private function preprocessImageWithImagick($imagePath)
+    {
+        try {
+            $image = new Imagick($imagePath);
+
+            // $imagick->adaptiveResizeImage(1200, 0);
+
+            // $imagick->setImageDepth(8);
+
+            // Konversi ke grayscale
+            // $imagick->modulateImage(100, 0, 100);
+            // $imagick->transformImageColorspace(\Imagick::COLORSPACE_GRAY);
+
+            // Hilangkan noise dengan Despeckle
+            // $imagick->despeckleImage();
+
+            // Gunakan blur ringan untuk mengurangi noise (opsional)
+            // $imagick->blurImage(1, 0.5);
+
+            // $imagick->statisticImage(\Imagick::STATISTIC_MEDIAN, 3, 3);
+
+            
+            // $imagick->adaptiveSharpenImage(2, 1.5);
+            // $imagick->adaptiveThresholdImage(150, 150, 5);
+            // $imagick->statisticImage(\Imagick::STATISTIC_MEDIAN, 3, 3);
+
+            // Rotasi jika miring (opsional)
+            // $imagick->deskewImage(40);
+
+            // // ✅ Resize for faster processing
+            // $imagick->adaptiveResizeImage(1200, 0);
+
+            // // ✅ Convert to grayscale
+            // $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALE);
+
+            // // ✅ Apply thresholding to make it black & white
+            // $imagick->adaptiveThresholdImage(150, 150, 5);
+
+            // -------
+            $image->setImageColorspace(Imagick::COLORSPACE_GRAY); // Convert to grayscale
+            $image->contrastImage(1); // Increase contrast
+            $image->adaptiveThresholdImage(1000, 1000, 10); // Apply adaptive thresholding
+            $image->resizeImage(0, 2000, Imagick::FILTER_LANCZOS, 1); // Resize to 2000px height
+            $image->blurImage(1, 0.5); // Apply a slight blur
+            $image->sharpenImage(0, 1); // Sharpen the image
+            $image->deskewImage(0.5); // Deskew the image
+            $image->normalizeImage(); // Normalize brightness and contrast
+
+            // Save preprocessed image
+            $processedPath = storage_path('app/public/images/'.basename($imagePath));
+            $image->writeImage($processedPath);
+            $image->clear();
+            $image->destroy();
+
+            return $processedPath;
+        } catch (\Exception $e) {
+            throw new \Exception('Image preprocessing failed: ' . $e->getMessage());
+        }
     }
 
     /**

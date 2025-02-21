@@ -9,6 +9,7 @@ Route::controller(SuratController::class)->group(function () {
     Route::get('/', [SuratController::class, 'index'])->name('home');
     Route::post('/scan', [SuratController::class, 'scan'])->name('scan');
     Route::get('/coba', [SuratController::class, 'getData'])->name('data');
+    Route::get('/proses', [SuratController::class, 'preprocessImages'])->name('preprocess');
     // Route::post('/preprocess', [SuratController::class, 'preprocessImages'])->name('preprocess');
 });
 
