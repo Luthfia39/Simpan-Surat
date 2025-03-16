@@ -4,32 +4,35 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Http\Requests\FileRequest;
 
 class FormUpload extends Component
 {
     use WithFileUploads;
-    
+
     public $files;
+    public $fileName = null; // Simpan nama file yang dipilih
 
-    public function scan(FileRequest $request)
+    public function updatedFiles()
     {
+        // Simpan nama file setelah user memilih
+        if ($this->files) {
+            $this->fileName = $this->files->getClientOriginalName();
+        }
+    }
 
-        if (!$request->hasFile('files')) {
+    public function scan()
+    {
+        if (!$this->files) {
             session()->flash('error', 'No files uploaded.');
+            $this->dispatch('showSweetAlert', ['type' => 'error', 'message' => 'File tidak berhasil diunggah. Silahkan ulangi!']);
             return;
         }
 
-        $files = $request->file('files');
+        $filePath = $this->files->storeAs("pdfs", $this->files->getClientOriginalName(), "public");
 
-        // Restrict to one PDF only
-        if (count($this->files) > 1) {
-            session()->flash('error', 'Only one PDF file can be uploaded at a time.');
-            return;
-        }
-
-        session()->flash('success', 'bisa');
-        
+        session()->flash('success', 'Berhasil menyimpan data!');
+        $this->dispatch('showSweetAlert', ['type' => 'success', 'title' => 'Hasil Scan', 'text' => 'Berhasil menyimpan data!']);
+        $this->reset(['files']);
     }
 
     public function render()

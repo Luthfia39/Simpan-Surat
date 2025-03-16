@@ -2,14 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use MongoDB\Laravel\Eloquent\Model; // Gunakan MongoDB Model
 
 class Surat extends Model
 {
-    protected $fillable = [
-        'files'
-    ];
-
-    use HasFactory;
+    protected $connection = 'mongodb'; // Pakai koneksi MongoDB
+    protected $collection = 'surat';   // Nama koleksi di MongoDB
+    protected $fillable = ['nomor_surat', 'tanggal_surat', 'isi_surat'];
 }
