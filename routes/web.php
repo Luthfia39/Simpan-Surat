@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\PdfController;
+use App\Http\Controllers\MongoController;
 use App\Http\Controllers\SuratController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,7 +14,12 @@ Route::controller(SuratController::class)->group(function () {
     // Route::post('/preprocess', [SuratController::class, 'preprocessImages'])->name('preprocess');
 });
 
-// Route::get('/', function () {
-//     return view('pdf-upload');
-// });
-// Route::post('/convert-pdf', [PdfController::class, 'convertPdfToImage']);
+Route::middleware('api')->prefix('api')->group(function () {
+    Route::post('/surat', [MongoController::class, 'store']); // Menyimpan surat
+    Route::get('/surat', [MongoController::class, 'index']); // Menampilkan semua surat
+    Route::get('/surat/{id}', [MongoController::class, 'show']); // Menampilkan surat berdasarkan ID
+    // Route::put('/surat/{id}', [MongoController::class, 'update']); // Mengupdate surat
+    Route::delete('/surat/{id}', [MongoController::class, 'destroy']); // Menghapus surat
+});
+
+// Route::apiResource('/surat', MongoController::class);
