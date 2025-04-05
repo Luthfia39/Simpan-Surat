@@ -15,11 +15,12 @@ Route::controller(SuratController::class)->group(function () {
 });
 
 Route::middleware('api')->prefix('api')->group(function () {
-    Route::post('/surat', [MongoController::class, 'store']); // Menyimpan surat
+    Route::post('/surat', [MongoController::class, 'store'])->name('surat.store'); // Menyimpan surat
     Route::get('/surat', [MongoController::class, 'index']); // Menampilkan semua surat
     Route::get('/surat/{id}', [MongoController::class, 'show']); // Menampilkan surat berdasarkan ID
     // Route::put('/surat/{id}', [MongoController::class, 'update']); // Mengupdate surat
     Route::delete('/surat/{id}', [MongoController::class, 'destroy']); // Menghapus surat
 });
+
 
 // Route::apiResource('/surat', MongoController::class);

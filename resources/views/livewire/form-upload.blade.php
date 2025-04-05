@@ -5,7 +5,7 @@
             <form wire:submit.prevent="scan">
                 @csrf
 
-                {{-- <div id="dropZone" class="upload-zone rounded-3 p-4"
+                <div id="dropZone" class="upload-zone rounded-3 p-4"
                     onclick="document.getElementById('fileInput').click()">
                     <div class="d-flex flex-column align-items-center justify-content-center h-100">
                         <div class="upload-icon mb-3 text-secondary">
@@ -35,7 +35,7 @@
 
                 <div id="errorAlert" class="alert alert-danger mt-4 mb-0 d-none">
                     <ul class="mb-0" id="errorList"></ul>
-                </div> --}}
+                </div>
 
                 <div class="text-center mt-4">
                     <x-button type="submit" variant="primary" width="full">Unggah</x-button>

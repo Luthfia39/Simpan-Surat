@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Surat;
+use Illuminate\Http\Request;
+
 class SuratController extends Controller
 {
     /**
@@ -12,9 +15,16 @@ class SuratController extends Controller
         return view('screen.dashboard.index');
     }
 
-    public function show()
+    public function show(Request $request)
     {
-        return view('screen.data.read.index');
+        $type = $request->query('type'); // Ambil parameter dari URL
+        if ($type) {
+            $surats = Surat::where('type', $type)->get();
+        } else {
+            $surats = Surat::all();
+        }
+        // dd($surats);
+        return view('screen.data.read.index', compact('surats'));
     }
 
     public function create()
