@@ -4,6 +4,65 @@
 @endsection
 @section('styles')
     <link href="DataTables/datatables.min.css" rel="stylesheet">
+    <style>
+        div#tableheader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        select.dt-input, input.dt-input {
+            border-radius: 0.5rem;
+            padding: 0.1rem;
+        }
+        input.dt-input {
+            flex: 1;
+            padding: 0.2rem;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input.dt-input:focus {
+            border-color: var(--bs-body-color);
+        }
+        .dt-search{
+            display: flex;
+            flex-direction: row;
+            gap: 0.3rem;
+            align-items: center;
+        }
+        thead {
+            background-color: var(--bs-border-color);
+        }
+        .dt-paging > nav {
+            display: flex;
+            gap: 0.5rem
+        }
+        .dt-paging-button {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--bs-link-color);
+            background-color: white;
+            color: #333;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .dt-paging-button:hover {
+            background-color: var(--bs-link-hover-color);
+            color: white;
+            border-color: var(--bs-link-hover-color);
+        }
+
+        .dt-paging-button.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            cursor: default;
+        }
+
+    </style>
 @endsection
 @section('content')
     <main class="content">
