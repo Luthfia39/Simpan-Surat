@@ -32,6 +32,28 @@ class SuratController extends Controller
         return view('screen.data.create.index');
     }
 
+    public function destroy($id)
+    {
+        $surat = Surat::find($id);
+
+        if (!$surat) {
+            return redirect()->back()->with('error', 'Data tidak ditemukan.');
+        }
+
+        $surat->delete();
+
+        return redirect()->back()->with('success', 'Data berhasil dihapus.');
+    }
+
+    public function detail($id)
+    {
+        // Ambil data surat berdasarkan ID
+        $surat = Surat::findOrFail($id);
+
+        // Tampilkan view detail dan kirimkan data surat
+        return view('screen.data.detail.index', compact('surat'));
+    }
+
     public function login()
     {
         return view('screen.login.index');
