@@ -57,9 +57,16 @@ class SuratController extends Controller
     public function download($id)
     {
         $surat = Surat::findOrFail($id);
-        $path = storage_path('app/public/pdfs/' . $surat->nama_file); // asumsi file disimpan di storage
+        $path = public_path('storage/pdfs/' . $surat->nama_file);
+
+        if (!file_exists($path)) {
+            return redirect()->back()->with('file_not_found', 'File tidak ditemukan atau sudah terhapus.');
+        }
+
         return response()->download($path);
     }
+
+
 
     public function login()
     {

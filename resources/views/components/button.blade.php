@@ -22,6 +22,7 @@
     'fontSize' => 6,
     'href' => null,
     'tooltip' => null,
+    'onclick' => null,
 ])
 
 
@@ -39,12 +40,13 @@
 
 @if ($href)
     <a href="{{ $href }}" class="{{ $commonClasses }}" style="{{ $style }}" role="button"
-        {!! $tooltipAttr !!}>
+        {!! $tooltipAttr !!} onclick="{{ $onclick }}">
         {{ $slot }}
     </a>
 @else
     <button type="{{ $type }}" class="{{ $commonClasses }}" style="{{ $style }}"
-        aria-disabled="{{ $disabled }}" {{ $disabled ? 'disabled' : '' }} {!! $tooltipAttr !!}>
+        aria-disabled="{{ $disabled }}" {{ $disabled ? 'disabled' : '' }} {!! $tooltipAttr !!}
+        onclick="{{ $onclick }}">
         {{ $slot }}
     </button>
 @endif

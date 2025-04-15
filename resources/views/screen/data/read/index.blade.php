@@ -44,7 +44,8 @@
 
         .dt-paging>nav {
             display: flex;
-            gap: 0.5rem
+            gap: 0.5rem;
+            margin: 1rem 1rem
         }
 
         .dt-paging-button {
@@ -119,7 +120,7 @@
                                     @if ($data['type'] === 'Surat Tugas')
                                         <span class="badge bg-success">Surat Tugas</span>
                                     @elseif ($data['jenis'] === 'Surat Keterangan')
-                                        <span class="badge bg-danger">Surat Keterangan</span>
+                                        <span class="badge bg-info">Surat Keterangan</span>
                                     @elseif ($data['jenis'] === 'Surat Permohonan')
                                         <span class="badge bg-warning">Surat Permohonan</span>
                                     @else
@@ -132,11 +133,11 @@
                                             tooltip="Detail Surat">
                                             <i class="fa-regular fa-eye"></i>
                                         </x-button>
-                                        <form action="{{ route('delete', $data['id']) }}" method="post">
+                                        <form action="{{ route('delete', $data['id']) }}" method="post"
+                                            id="delete-form-{{ $data['id'] }}">
                                             @csrf
-                                            <input type="hidden" name="id" value="{{ $data['id'] }}">
-                                            <x-button variant="danger" tooltip="Hapus Surat" type="submit"
-                                                onclick="confirmDelete(event, '{{ route('delete', $data['id']) }}')">
+                                            <x-button variant="danger" tooltip="Hapus Surat"
+                                                onclick="confirmDelete({!! json_encode($data['id']) !!})">
                                                 <i class="fa-regular fa-trash-can"></i>
                                             </x-button>
                                         </form>
@@ -156,29 +157,25 @@
 @section('customJs')
     <script src="{{ asset('assets/js/datatables.js') }}"></script>
     <script src="{{ asset('assets/js/tables.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function confirmDelete(event, url) {
-            console.log(url);
-
+        function confirmDelete(id) {
             event.preventDefault();
 
-            // Swal.fire({
-            //     title: 'Yakin ingin menghapus surat ini?',
-            //     text: "Data yang sudah dihapus tidak bisa dikembalikan!",
-            //     icon: 'warning',
-            //     showCancelButton: true,
-            //     confirmButtonColor: '#d33',
-            //     cancelButtonColor: '#3085d6',
-            //     confirmButtonText: 'Hapus',
-            //     cancelButtonText: 'Batal',
-            //     reverseButtons: true
-            // }).then((result) => {
-            //     if (result.isConfirmed) {
-            //         // Redirect manual setelah konfirmasi
-            //         window.location.href = url;
-            //     }
-            // });
+            Swal.fire({
+                title: 'Yakin ingin menghapus surat ini?',
+                text: "Data yang sudah dihapus tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + id).submit();
+                }
+            });
         }
     </script>
 @endsection
