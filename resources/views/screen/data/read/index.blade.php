@@ -116,15 +116,32 @@
                                 <td class="text-center">Penanda tangan</td>
                                 <td class="text-center">{{ $data['tanggal'] }}</td>
                                 <td class="text-center">
-                                    <x-button customColor="#833625" disabled="true">Surat Keluar</x-button>
+                                    @if ($data['type'] === 'Surat Tugas')
+                                        <span class="badge bg-success">Surat Tugas</span>
+                                    @elseif ($data['jenis'] === 'Surat Keterangan')
+                                        <span class="badge bg-danger">Surat Keterangan</span>
+                                    @elseif ($data['jenis'] === 'Surat Permohonan')
+                                        <span class="badge bg-warning">Surat Permohonan</span>
+                                    @else
+                                        <span class="badge bg-secondary">{{ $data['type'] }}</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">
-                                    <x-button variant="primary" href="{{ route('detail', $data['id']) }}">
-                                        <i class="fa-regular fa-eye"></i>
-                                    </x-button>
-                                    <x-button variant="danger" href="{{ route('delete', $data['id']) }}">
-                                        <i class="fa-regular fa-trash-can"></i>
-                                    </x-button>
+                                    <div class="d-flex gap-2">
+                                        <x-button variant="primary" href="{{ route('detail', $data['id']) }}"
+                                            tooltip="Detail Surat">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </x-button>
+                                        <form action="{{ route('delete', $data['id']) }}" method="post">
+                                            @csrf
+                                            <input type="hidden" name="id" value="{{ $data['id'] }}">
+                                            <x-button variant="danger" tooltip="Hapus Surat" type="submit"
+                                                onclick="confirmDelete(event, '{{ route('delete', $data['id']) }}')">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </x-button>
+                                        </form>
+                                    </div>
+
                                 </td>
                             </tr>
                         @endforeach
@@ -139,4 +156,29 @@
 @section('customJs')
     <script src="{{ asset('assets/js/datatables.js') }}"></script>
     <script src="{{ asset('assets/js/tables.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete(event, url) {
+            console.log(url);
+
+            event.preventDefault();
+
+            // Swal.fire({
+            //     title: 'Yakin ingin menghapus surat ini?',
+            //     text: "Data yang sudah dihapus tidak bisa dikembalikan!",
+            //     icon: 'warning',
+            //     showCancelButton: true,
+            //     confirmButtonColor: '#d33',
+            //     cancelButtonColor: '#3085d6',
+            //     confirmButtonText: 'Hapus',
+            //     cancelButtonText: 'Batal',
+            //     reverseButtons: true
+            // }).then((result) => {
+            //     if (result.isConfirmed) {
+            //         // Redirect manual setelah konfirmasi
+            //         window.location.href = url;
+            //     }
+            // });
+        }
+    </script>
 @endsection

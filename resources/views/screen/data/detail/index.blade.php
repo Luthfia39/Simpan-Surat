@@ -33,7 +33,7 @@
 
                     <div class="d-flex gap-2 mt-4">
                         {{-- Tombol Download --}}
-                        <x-button class="btn btn-success">
+                        <x-button class="btn btn-success" tooltip="Download Surat">
                             {{-- <a href="{{ route('surat.download', $surat->id) }}" class="btn btn-success"> --}}
                             <i class="fa fa-download"></i> Download Surat
                         </x-button>
@@ -42,7 +42,7 @@
                         <form action="" method="POST" onsubmit="return confirm('Yakin ingin menghapus surat ini?')">
                             @csrf
                             @method('DELETE')
-                            <x-button class="btn btn-danger">
+                            <x-button type="submit" variant="danger" tooltip="Hapus Surat">
                                 <i class="fa fa-trash"></i> Hapus Surat
                             </x-button>
                         </form>

@@ -17,11 +17,12 @@ class button extends Component
     public $fontWeight;
     public $fontSize;
     public $src;
+    public $tooltip;
 
     /**
      * Create a new component instance.
      */
-    public function __construct($type = 'button', $variant = 'primary', $size = 'sm', $width = 'auto', $disabled = false, $customColor = null, $fontWeight = 'normal', $fontSize = '6', $src = null)
+    public function __construct($type = 'button', $variant = 'primary', $size = 'sm', $width = 'auto', $disabled = false, $customColor = null, $fontWeight = 'normal', $fontSize = '6', $src = null, $tooltip = null)
     {
         $this->type = $type;
         $this->variant = $variant;
@@ -32,6 +33,7 @@ class button extends Component
         $this->fontWeight = $fontWeight;
         $this->fontSize = $fontSize;
         $this->src = $src;
+        $this->tooltip = $tooltip;
     }
 
     /**

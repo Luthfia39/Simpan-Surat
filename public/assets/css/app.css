@@ -42,3 +42,37 @@
 .has-files .upload-icon {
     transform: scale(0.8);
 }
+/* Tooltip container */
+.tooltip {
+    z-index: 9999;
+    opacity: 1;
+}
+
+/* Tooltip content */
+.tooltip-inner {
+    background-color: #343a40; /* Warna background */
+    color: #fff;              /* Warna teks */
+    font-size: 0.875rem;      /* Ukuran font */
+    padding: 8px 12px;        /* Padding dalam */
+    border-radius: 8px;       /* Sudut tumpul */
+    max-width: 250px;         /* Maksimal lebar */
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Bayangan */
+}
+
+/* Tooltip arrow */
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #343a40;
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: #343a40;
+}
+
+.tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: #343a40;
+}
+
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: #343a40;
+}

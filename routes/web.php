@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::controller(SuratController::class)->group(function () {
+    Route::post('/delete/{id}', [SuratController::class, 'destroy'])->name('delete');
     Route::get('/', [SuratController::class, 'index'])->name('dashboard');
     Route::get('/show', [SuratController::class, 'show'])->name('show');
     Route::get('/create', [SuratController::class, 'create'])->name('create');
-    Route::post('/delete/{id}', [SuratController::class, 'destroy'])->name('delete');
+    // Route::delete('/delete/{id}', [SuratController::class, 'destroy'])->name('delete');
     Route::get('/detail/{id}', [SuratController::class, 'detail'])->name('detail');
     Route::get('/login', [SuratController::class, 'login'])->name('login');
     // Route::post('/scan', [SuratController::class, 'scan'])->name('scan');

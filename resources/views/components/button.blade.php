@@ -21,6 +21,7 @@
     'fontWeight' => 'normal',
     'fontSize' => 6,
     'href' => null,
+    'tooltip' => null,
 ])
 
 
@@ -33,25 +34,17 @@
         default => '',
     };
     $commonClasses = "btn {$btnClass} btn-{$size} {$widthClass} shadow-sm fw-{$fontWeight} fs-{$fontSize} px-2 rounded-3";
+    $tooltipAttr = $tooltip ? "data-bs-toggle=tooltip title='{$tooltip}'" : '';
 @endphp
 
-
-{{-- <button
-    type="{{ $type }}"
-    class="btn {{ $btnClass }} btn-{{ $size }} {{ $widthClass }} shadow-sm fw-{{$fontWeight}} fs-{{$fontSize}} px-2 rounded-3"
-    style="{{ $style }}"
-    aria-disabled="{{$disabled}}"
->
-    {{ $slot }}
-</button> --}}
-
 @if ($href)
-    <a href="{{ $href }}" class="{{ $commonClasses }}" style="{{ $style }}" role="button">
+    <a href="{{ $href }}" class="{{ $commonClasses }}" style="{{ $style }}" role="button"
+        {!! $tooltipAttr !!}>
         {{ $slot }}
     </a>
 @else
     <button type="{{ $type }}" class="{{ $commonClasses }}" style="{{ $style }}"
-        aria-disabled="{{ $disabled }}" {{ $disabled ? 'disabled' : '' }}>
+        aria-disabled="{{ $disabled }}" {{ $disabled ? 'disabled' : '' }} {!! $tooltipAttr !!}>
         {{ $slot }}
     </button>
 @endif

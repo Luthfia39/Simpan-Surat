@@ -54,6 +54,13 @@ class SuratController extends Controller
         return view('screen.data.detail.index', compact('surat'));
     }
 
+    public function download($id)
+    {
+        $surat = Surat::findOrFail($id);
+        $path = storage_path('app/public/pdfs/' . $surat->nama_file); // asumsi file disimpan di storage
+        return response()->download($path);
+    }
+
     public function login()
     {
         return view('screen.login.index');
