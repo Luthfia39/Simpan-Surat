@@ -5,7 +5,8 @@
 @section('content')
     <main class="content">
         <div class="container-fluid p-0">
-            <h1 class="h3 mb-3">Detail Surat</h1>
+            <h1 class="fs-2 mb-2 fw-semibold">Informasi Lengkap Surat</h1>
+            <p class="mb-4 fs-4">Halaman ini menampilkan rincian lengkap dari surat yang dipilih.</p>
 
             <div class="card">
                 <div class="card-body">

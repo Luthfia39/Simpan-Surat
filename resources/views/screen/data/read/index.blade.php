@@ -88,7 +88,9 @@
     <main class="content">
         <div class="container-fluid p-0">
 
-            <h1 class="h3 mb-3">Daftar Surat</h1>
+            <h1 class="fs-2 mb-2 fw-semibold">Rekapitulasi Data Surat Keluar</h1>
+            <p class="mb-4 fs-4">Lihat dan kelola seluruh surat yang sudah diterbitkan, sesuai dengan kategori dan tujuan.
+            </p>
 
             <div class="table-responsive">
                 <table class="table " id="tableBase">
@@ -119,9 +121,9 @@
                                 <td class="text-center">
                                     @if ($data['type'] === 'Surat Tugas')
                                         <span class="badge bg-success">Surat Tugas</span>
-                                    @elseif ($data['jenis'] === 'Surat Keterangan')
+                                    @elseif ($data['type'] === 'Surat Keterangan')
                                         <span class="badge bg-info">Surat Keterangan</span>
-                                    @elseif ($data['jenis'] === 'Surat Permohonan')
+                                    @elseif ($data['type'] === 'Surat Permohonan')
                                         <span class="badge bg-warning">Surat Permohonan</span>
                                     @else
                                         <span class="badge bg-secondary">{{ $data['type'] }}</span>

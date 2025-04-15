@@ -6,7 +6,9 @@
     <main class="content">
         <div class="container-fluid p-0">
 
-            <h1 class="h3 mb-3">Simpan dokumen Anda dengan aman disini!</h1>
+            <h1 class="fs-2 mb-2 fw-semibold">Tambah Surat Resmi ke Sistem</h1>
+            <p class="mb-4 fs-4">Gunakan formulir ini untuk mendata surat masuk maupun keluar, agar dapat terarsipkan dengan
+                rapi dan mudah ditelusuri.</p>
 
             <livewire:form-upload />
 

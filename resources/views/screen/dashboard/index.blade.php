@@ -1,101 +1,114 @@
 @extends('layouts.app')
 @section('title')
-	Unggah Dokumen
+    Unggah Dokumen
 @endsection
 @section('content')
-		{{-- <div class="main"> --}}
+    {{-- <div class="main"> --}}
 
-			<main class="content">
-				<div class="container-fluid p-0">
+    <main class="content">
+        <div class="container-fluid p-0">
 
-					<h1 class="h3 mb-3">Dashboard</h1>
+            <h1 class="fs-2 mb-2 fw-semibold">Selamat Datang di Dashboard SuratTEDI</h1>
+            <p class="mb-4 fs-4">Pantau jumlah surat keluar, statistik, dan informasi lainnya dalam satu tampilan.</p>
 
-					
 
-				</div>
-			</main>
 
-		{{-- </div> --}}
-@endsection	
+        </div>
+    </main>
+
+    {{-- </div> --}}
+@endsection
 
 @section('customJs')
-<script>
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const errorAlert = document.getElementById('errorAlert');
-    const errorList = document.getElementById('errorList');
-    let currentFile = null;
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorList = document.getElementById('errorList');
+        let currentFile = null;
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, highlight, false);
-    });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, unhighlight, false);
-    });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
 
-    dropZone.addEventListener('drop', handleDrop, false);
-    fileInput.addEventListener('change', handleFiles);
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles);
 
-    function preventDefaults (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function highlight(e) {
-        dropZone.classList.add('border-primary');
-    }
-
-    function unhighlight(e) {
-        dropZone.classList.remove('border-primary');
-    }
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles({ target: { files: files } });
-    }
-
-    function validateFile(file) {
-        if (!file) return { valid: false, error: 'Pilih file PDF untuk diunggah' };
-        if (file.type !== 'application/pdf') {
-            return { valid: false, error: 'Hanya file PDF yang diperbolehkan' };
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
         }
-        return { valid: true };
-    }
 
-    function handleFiles(e) {
-        const file = e.target.files[0];
-        const validation = validateFile(file);
-        
-        // Clear previous errors
-        errorList.innerHTML = '';
-        errorAlert.classList.add('d-none');
-        
-        if (!validation.valid) {
-            errorAlert.classList.remove('d-none');
-            const li = document.createElement('li');
-            li.textContent = validation.error;
-            errorList.appendChild(li);
+        function highlight(e) {
+            dropZone.classList.add('border-primary');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('border-primary');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({
+                target: {
+                    files: files
+                }
+            });
+        }
+
+        function validateFile(file) {
+            if (!file) return {
+                valid: false,
+                error: 'Pilih file PDF untuk diunggah'
+            };
+            if (file.type !== 'application/pdf') {
+                return {
+                    valid: false,
+                    error: 'Hanya file PDF yang diperbolehkan'
+                };
+            }
+            return {
+                valid: true
+            };
+        }
+
+        function handleFiles(e) {
+            const file = e.target.files[0];
+            const validation = validateFile(file);
+
+            // Clear previous errors
+            errorList.innerHTML = '';
+            errorAlert.classList.add('d-none');
+
+            if (!validation.valid) {
+                errorAlert.classList.remove('d-none');
+                const li = document.createElement('li');
+                li.textContent = validation.error;
+                errorList.appendChild(li);
+                preview.innerHTML = '';
+                dropZone.classList.remove('has-files');
+                currentFile = null;
+                return;
+            }
+
+            currentFile = file;
             preview.innerHTML = '';
-            dropZone.classList.remove('has-files');
-            currentFile = null;
-            return;
-        }
+            dropZone.classList.add('has-files');
 
-        currentFile = file;
-        preview.innerHTML = '';
-        dropZone.classList.add('has-files');
-        
-        const div = document.createElement('div');
-        div.className = 'preview-item';
-        div.innerHTML = `
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
             <div class="w-100 h-100 rounded shadow-sm bg-light d-flex flex-column align-items-center justify-content-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-file-pdf text-danger mb-2" viewBox="0 0 16 16">
                     <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
@@ -103,17 +116,17 @@
                 </svg>
                 <span class="text-muted small">${file.name}</span>
             </div>
-            <button type="button" class="remove-btn btn btn-danger btn-sm rounded-circle" 
+            <button type="button" class="remove-btn btn btn-danger btn-sm rounded-circle"
                 onclick="event.stopPropagation(); removeFile();">×</button>
         `;
-        preview.appendChild(div);
-    }
+            preview.appendChild(div);
+        }
 
-    function removeFile() {
-        currentFile = null;
-        fileInput.value = '';
-        preview.innerHTML = '';
-        dropZone.classList.remove('has-files');
-    }
-</script>
+        function removeFile() {
+            currentFile = null;
+            fileInput.value = '';
+            preview.innerHTML = '';
+            dropZone.classList.remove('has-files');
+        }
+    </script>
 @endsection
