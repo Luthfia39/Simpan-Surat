@@ -88,8 +88,8 @@
     <main class="content">
         <div class="container-fluid p-0">
 
-            <h1 class="fs-2 mb-2 fw-semibold">Rekapitulasi Data Surat Keluar</h1>
-            <p class="mb-4 fs-4">Lihat dan kelola seluruh surat yang sudah diterbitkan, sesuai dengan kategori dan tujuan.
+            <h1 class="fs-3 mb-2 fw-semibold">Rekapitulasi Data Surat Keluar</h1>
+            <p class="mb-4">Lihat dan kelola seluruh surat yang sudah diterbitkan, sesuai dengan kategori dan tujuan.
             </p>
 
             <div class="table-responsive">

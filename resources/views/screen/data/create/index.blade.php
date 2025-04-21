@@ -6,9 +6,11 @@
     <main class="content">
         <div class="container-fluid p-0">
 
-            <h1 class="fs-2 mb-2 fw-semibold">Tambah Surat Resmi ke Sistem</h1>
-            <p class="mb-4 fs-4">Gunakan formulir ini untuk mendata surat masuk maupun keluar, agar dapat terarsipkan dengan
+            <h1 class="fs-3 mb-2 fw-semibold">Tambah Surat Resmi ke Sistem</h1>
+            <p class="mb-4">Gunakan formulir ini untuk mendata surat keluar, agar dapat terarsipkan dengan
                 rapi dan mudah ditelusuri.</p>
+
+            <livewire:signer-dropdown />
 
             <livewire:form-upload />
 
@@ -17,6 +19,9 @@
 @endsection
 
 @section('customJs')
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <script>
         document.addEventListener("livewire:load", function() {
             window.Livewire = Livewire;
