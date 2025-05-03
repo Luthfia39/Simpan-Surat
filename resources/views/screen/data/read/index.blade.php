@@ -89,11 +89,10 @@
         <div class="container-fluid p-0">
 
             <h1 class="fs-3 mb-2 fw-semibold">Rekapitulasi Data Surat Keluar</h1>
-            <p class="mb-4">Lihat dan kelola seluruh surat yang sudah diterbitkan, sesuai dengan kategori dan tujuan.
-            </p>
+            <p class="mb-4">Lihat dan kelola seluruh surat yang sudah diterbitkan, sesuai dengan kategori dan tujuan.</p>
 
             <div class="table-responsive">
-                <table class="table " id="tableBase">
+                <table class="table" id="tableBase">
                     <thead style="background-color: #e6e6e6">
                         <tr>
                             <th class="text-center">No</th>
@@ -108,15 +107,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($surats as $data)
+                        @foreach ($surats as $index => $data) <!-- Use $index to get the row number -->
                             <tr style="color: #969696">
-                                <td class="text-center">No</td>
-                                <td class="text-center">Jenis/perihal</td>
+                                <td class="text-center">{{ $index + 1 }}</td> <!-- Display row number -->
+                                <td class="text-center">{{ $data['perihal'] ??  '-'}}</td> <!-- Assuming 'perihal' is the correct key -->
                                 <td class="text-center">{{ $data['nomor_surat'] }}</td>
                                 <td class="text-center">{{ $data['penerima'] }}</td>
                                 <td class="text-center isi-truncated" style="width: 200px">
                                     {{ $data['isi_surat'] }}</td>
-                                <td class="text-center">Penanda tangan</td>
+                                <td class="text-center">{{ $data['penanda_tangan'] }}</td> <!-- Assuming 'penanda_tangan' is the correct key -->
                                 <td class="text-center">{{ $data['tanggal'] }}</td>
                                 <td class="text-center">
                                     @if ($data['type'] === 'Surat Tugas')
@@ -144,7 +143,6 @@
                                             </x-button>
                                         </form>
                                     </div>
-
                                 </td>
                             </tr>
                         @endforeach

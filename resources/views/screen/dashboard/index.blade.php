@@ -8,8 +8,8 @@
     <main class="content">
         <div class="container-fluid p-0">
 
-            <h1 class="fs-2 mb-2 fw-semibold">Selamat Datang di Dashboard SuratTEDI</h1>
-            <p class="mb-4 fs-4">Pantau jumlah surat keluar, statistik, dan informasi lainnya dalam satu tampilan.</p>
+            <h1 class="fs-3 mb-2 fw-semibold">Selamat Datang di Dashboard SuratDTEDI</h1>
+            <p class="mb-4">Pantau jumlah surat keluar, statistik, dan informasi lainnya dalam satu tampilan.</p>
 
 
 

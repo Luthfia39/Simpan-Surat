@@ -67,6 +67,7 @@ class FormUpload extends Component
                 "penerima" => $this->ocrData["penerima"],
                 "alamat" => $this->ocrData["alamat"],
                 "isi_surat" => $this->ocrData["isi_surat"],
+                "penanda_tangan" => "Ir. Nur Rohman Rosyid",
             ]);
 
             $this->dispatch("showResultAlert", [

@@ -10,8 +10,6 @@
             <p class="mb-4">Gunakan formulir ini untuk mendata surat keluar, agar dapat terarsipkan dengan
                 rapi dan mudah ditelusuri.</p>
 
-            <livewire:signer-dropdown />
-
             <livewire:form-upload />
 
         </div>
@@ -61,7 +59,7 @@
                         confirmButtonText: "Simpan",
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            console.log("simpan")
+                            // console.log("simpan")
                             Livewire.dispatch('saveData');
                         }
                     });

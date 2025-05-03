@@ -4,10 +4,24 @@ use App\Http\Controllers\MongoController;
 use App\Http\Controllers\SuratController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('screen.welcome');
+});
 
 Route::controller(SuratController::class)->group(function () {
     Route::post('/delete/{id}', [SuratController::class, 'destroy'])->name('delete');
-    Route::get('/', [SuratController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [SuratController::class, 'index'])->name('dashboard');
     Route::get('/show', [SuratController::class, 'show'])->name('show');
     Route::get('/create', [SuratController::class, 'create'])->name('create');
     Route::get('/detail/{id}', [SuratController::class, 'detail'])->name('detail');
