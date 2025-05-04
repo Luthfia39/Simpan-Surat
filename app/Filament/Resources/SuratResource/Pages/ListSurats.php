@@ -16,15 +16,4 @@ class ListSurats extends ListRecords
     //         Actions\CreateAction::make(),
     //     ];
     // }
-
-    public function getHeading(): string
-    {
-        $user = auth()->user();
-        return "Halo, {$user->name}";
-    }
-
-    public function getSubheading(): string
-    {
-        return 'Pilih salah satu template di bawah ini untuk mulai membuat surat';
-    }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SuratResource\Templates;
+namespace App\Filament\Resources\TemplateResource\Templates;
 
 abstract class CreateTemplate
 {

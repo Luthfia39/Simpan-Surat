@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\SuratResource\Pages;
+namespace App\Filament\Resources\TemplateResource\Pages;
 
-use App\Filament\Resources\SuratResource;
+use App\Filament\Resources\TemplateResource;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Section;
@@ -20,9 +20,9 @@ class CreateSuratFromTemplate extends Page
     use InteractsWithFormActions;
     use InteractsWithRecord;
     
-    protected static string $resource = SuratResource::class;
+    protected static string $resource = TemplateResource::class;
 
-    protected static string $view = 'filament.resources.surat-resource.pages.create-surat-from-template';
+    protected static string $view = 'filament.resources.template-resource.pages.create-surat-from-template';
 
     public ?array $data = [];
 
@@ -55,7 +55,7 @@ class CreateSuratFromTemplate extends Page
 
     private function getClassFile(): void
     {
-        $namespace = 'App\\Filament\\Resources\\SuratResource\\Templates\\';
+        $namespace = 'App\\Filament\\Resources\\TemplateResource\\Templates\\';
         $class = $namespace.$this->record->class_name;
 
         $path = str_replace('\\', DIRECTORY_SEPARATOR, $class);

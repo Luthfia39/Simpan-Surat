@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SuratResource\Pages;
 use App\Filament\Resources\SuratResource\RelationManagers;
-use App\Models\Template;
+use App\Models\Surat;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,16 +14,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-// using mongoDB
-use MongoDB\Laravel\Eloquent\Model;
-
 class SuratResource extends Resource
 {
-    protected static ?string $model = Template::class;
+    protected static ?string $model = Surat::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 3;
+
+    protected static ?string $navigationLabel = 'List Surat';
 
     protected static ?string $slug = '/';
 
@@ -38,25 +37,26 @@ class SuratResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                Stack::make([
-                    IconColumn::make('name')
-                        ->icon('heroicon-s-document'),
-                    TextColumn::make('name')
-                        ->label('Nama')
-                        ->size(TextColumn\TextColumnSize::Medium)
-                        ->searchable(true),
-                ])->space(2),
-            ])
-            ->contentGrid([
-                'sm' => 1,
-                'md' => 2,
-                'xl' => 3,
-            ])
-            ->defaultSort('name')
-            ->recordUrl(
-                fn (Model $record): string => Pages\CreateSuratFromTemplate::getUrl([$record->id]),
-            );
+            // ->columns([
+            //     Stack::make([
+            //         IconColumn::make('name')
+            //             ->icon('heroicon-s-document'),
+            //         TextColumn::make('name')
+            //             ->label('Nama')
+            //             ->size(TextColumn\TextColumnSize::Medium)
+            //             ->searchable(true),
+            //     ])->space(2),
+            // ])
+            // ->contentGrid([
+            //     'sm' => 1,
+            //     'md' => 2,
+            //     'xl' => 3,
+            // ])
+            // ->defaultSort('name')
+            // ->recordUrl(
+            //     fn (Model $record): string => Pages\CreateSuratFromTemplate::getUrl([$record->id]),
+            // )
+            ;
     }
 
     public static function getRelations(): array
@@ -70,8 +70,7 @@ class SuratResource extends Resource
     {
         return [
             'index' => Pages\ListSurats::route('/'),
-            'create' => Pages\CreateSuratFromTemplate::route('/templates/{record}'),
-            // 'create' => Pages\CreateSurat::route('/create'),
+            'create' => Pages\CreateSurat::route('/create'),
             'edit' => Pages\EditSurat::route('/{record}/edit'),
         ];
     }

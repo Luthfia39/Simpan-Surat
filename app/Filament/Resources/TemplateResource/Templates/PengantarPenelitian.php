@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SuratResource\Templates;
+namespace App\Filament\Resources\TemplateResource\Templates;
 
 use App\Enums\Major;
 use App\Forms\Components\NimInput;

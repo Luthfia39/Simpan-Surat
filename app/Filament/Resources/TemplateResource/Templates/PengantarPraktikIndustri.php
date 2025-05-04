@@ -1,29 +1,36 @@
 <?php
 
-namespace App\Filament\Resources\SuratResource\Templates;
+namespace App\Filament\Resources\TemplateResource\Templates;
 
 use App\Enums\Major;
 use App\Forms\Components\NimInput;
-use Filament\Forms\Components\DatePicker;
+use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\DatePicker;
 
-class PraktikIndustri extends CreateTemplate
+
+class PengantarPraktikIndustri extends CreateTemplate
 {
-    public static ?string $view = 'templates.praktik-industri';
-
+    public static ?string $view = 'templates.pengantar-praktik-industri';
+    
     public static function getSchema(): array
     {
+        $helperText = "Contoh:<br>Yth. Kepala <br>
+                    Dinas Komunikasi dan Informatika Kabupaten Sleman,<br>
+                    Jl. Parasamya No. 1, Beran, Tridadi, Kec. Sleman,<br>
+                    Kabupaten Sleman, Daerah Istimewa Yogyakarta 55511";
+                    
         return [
             Section::make([
-                TextInput::make('perusahaan')
-                    ->minLength(2)
-                    ->required(),
-                TextInput::make('dospem')
-                    ->label('Dosen Pembimbing')
-                    ->minLength(2)
+                Textarea::make('tujuan')
+                    ->rows(4)
+                    ->extraInputAttributes(['style' => 'resize:none'])
+                    ->helperText(new HtmlString($helperText))
+                    ->columnSpanFull()
                     ->required(),
                 DatePicker::make('tgl_mulai')
                     ->label('Tanggal Mulai')
@@ -36,8 +43,12 @@ class PraktikIndustri extends CreateTemplate
                     ->label('Program Studi')
                     ->options(Major::toArray())
                     ->required(),
+                TextInput::make('tempat')
+                ->minLength(2)
+                ->helperText('Contoh: Dinas Komunikasi dan Informatika')
+                ->required(),
             ])
-                ->columns(2),
+                ->columns(2), 
             Section::make([
                 Repeater::make('kelompok')
                     ->schema([

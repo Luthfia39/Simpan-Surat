@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Filament\Resources\SuratResource\Templates;
+namespace App\Filament\Resources\TemplateResource\Templates;
 
 use App\Enums\Major;
 use App\Forms\Components\NimInput;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
-class KeteranganAlumni extends CreateTemplate
+class MagangMbkm extends CreateTemplate
 {
-    public static ?string $view = 'templates.keterangan-alumni';
+    public static ?string $view = 'templates.magang-mbkm';
 
     public static function getSchema(): array
     {
@@ -28,21 +29,23 @@ class KeteranganAlumni extends CreateTemplate
                     ->label('Program Studi')
                     ->options(Major::toArray())
                     ->required(),
-                TextInput::make('thn_lulus')
-                    ->label('Tahun Lulus')
-                    ->mask('9999')
-                    ->regex('/^\d{4}$/')
+                TextInput::make('dospem')
+                    ->label('Dosen Pembimbing')
+                    ->minLength(2)
                     ->required(),
-                TextInput::make('keterangan')
-                    ->label('Tujuan Pengajuan')
-                    ->helperText('Contoh: untuk keperluan melengkapi berkas')
-                    ->minLength(5)
-                    ->maxLength(255)
-                    ->columnSpanFull()
+                TextInput::make('penyelenggara')
+                    ->label('Penyelenggara Magang')
+                    ->minLength(2)
+                    ->required(),
+                DatePicker::make('tgl_mulai')
+                    ->label('Tanggal Mulai')
+                    ->before('tgl_selesai')
+                    ->required(),
+                DatePicker::make('tgl_selesai')
+                    ->label('Tanggal Selesai')
                     ->required(),
             ])
                 ->columns(2),
-
         ];
     }
 }
