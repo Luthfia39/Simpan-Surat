@@ -39,5 +39,9 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::delete('/surat/{id}', [MongoController::class, 'destroy']); // Menghapus surat
 });
 
+Route::get('/pdf', function () {
+    return view('templates.aktif-kuliah');
+});
+
 
 // Route::apiResource('/surat', MongoController::class);
