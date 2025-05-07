@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Resources\SuratMasukResource\Pages;
 
-use Filament\Pages\Page;
+use App\Filament\Resources\SuratMasukResource;
+
+use Filament\Resources\Pages\Page;
 use Filament\Forms;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -11,19 +13,22 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 
-class InputSurat extends Page
+class CreateSuratMasuk extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-plus';
+    protected static string $resource = SuratMasukResource::class;
 
-    protected static string $view = 'filament.pages.input-surat';
-
-    protected static ?int $navigationSort = 2;
+    protected static string $view = 'filament.resources.surat-masuk-resource.pages.create';
 
     public $file_path;
 
+    public function getTitle(): string
+    {
+        return 'Input Surat'; 
+    }
+
     public function mount(): void
     {
-        $this->form->fill(); // Untuk inisialisasi form
+        $this->form->fill(); 
     }
 
     protected function getFormSchema(): array
@@ -117,3 +122,4 @@ class InputSurat extends Page
         ];
     }
 }
+

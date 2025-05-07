@@ -21,39 +21,39 @@ class CreateSurat extends Page
     public function formSchema(): array
     {
         return [
-            Forms\Components\FileUpload::make('file_path')
-                ->label('Unggah File PDF')
-                ->acceptedFileTypes(['application/pdf'])
-                ->maxFiles(1)
-                ->directory('surat')
-                ->required(),
+            // Forms\Components\FileUpload::make('file_path')
+            //     ->label('Unggah File PDF')
+            //     ->acceptedFileTypes(['application/pdf'])
+            //     ->maxFiles(1)
+            //     ->directory('surat')
+            //     ->required(),
         ];
     }
 
     public function processFile(array $data)
     {
-        // Simpan file sementara untuk dikirim ke API Flask
-        $filePath = $data['file_path'];
-        $fileContent = Storage::get($filePath);
+        // // Simpan file sementara untuk dikirim ke API Flask
+        // $filePath = $data['file_path'];
+        // $fileContent = Storage::get($filePath);
 
-        // Kirim file ke API Flask
-        $response = Http::attach(
-            'file',
-            $fileContent,
-            basename($filePath)
-        )->post('http://localhost:5000/process-pdf');
+        // // Kirim file ke API Flask
+        // $response = Http::attach(
+        //     'file',
+        //     $fileContent,
+        //     basename($filePath)
+        // )->post('http://localhost:5000/process-pdf');
 
-        if ($response->successful()) {
-            $responseData = $response->json();
+        // if ($response->successful()) {
+        //     $responseData = $response->json();
 
-            // Simpan respons Flask ke sesi
-            Session::put('flask_response', $responseData);
-            Session::put('uploaded_file_path', $filePath);
+        //     // Simpan respons Flask ke sesi
+        //     Session::put('flask_response', $responseData);
+        //     Session::put('uploaded_file_path', $filePath);
 
-            // Redirect ke halaman edit respons
-            return redirect()->route('filament.admin.resources.surats.edit-response');
-        } else {
-            throw new \Exception('Gagal memproses file PDF di API Flask.');
-        }
+        //     // Redirect ke halaman edit respons
+        //     return redirect()->route('filament.admin.resources.surats.edit-response');
+        // } else {
+        //     throw new \Exception('Gagal memproses file PDF di API Flask.');
+        // }
     }
 }
