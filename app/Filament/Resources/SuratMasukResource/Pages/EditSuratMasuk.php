@@ -15,6 +15,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 
 class EditSuratMasuk extends Page
@@ -38,77 +40,53 @@ class EditSuratMasuk extends Page
 
     public function mount(): void
     {
-        // Data awal kosong
-        $this->form->fill();
+        $ocrData = Session::get('flask_response', null);
+
+        $this->form->fill([
+            'ocr_text' => $ocrData['ocr_text'],
+            'letter_type' => $ocrData['letter_type'],
+            'nomor_surat' => $ocrData['extracted_fields']['nomor_surat'] ?? '',
+            'pengirim' => $ocrData['extracted_fields']['pengirim'] ?? '',
+            'penandatangan' => $ocrData['extracted_fields']['penandatangan'] ?? '',
+        ]);
     }
 
-    public function form(Form $form): Form
+    public function form(\Filament\Forms\Form $form): \Filament\Forms\Form
     {
         return $form
             ->schema([
-                // TextEntry::make('ocr-content')
-                //     ->tooltip('Isi surat akan muncul disini')
-                //     ->default('Nomor\nLamp\nHal\n\nKepada :\n\nUNIVERSITAS GADJAH MADA\nSEKOLAH VOKASI ee'),
-                Wizard::make([
-                    Step::make('Jenis Surat')
-                        ->schema([
-                            Select::make('jenis_surat')
-                                ->options([
-                                    'resmi' => 'Surat Resmi',
-                                    'undangan' => 'Surat Undangan',
-                                    'permohonan' => 'Surat Permohonan',
-                                ])
-                                ->required(),
-                        ]),
-
-                    Step::make('Nomor Surat')
-                        ->schema([
-                            TextInput::make('nomor_surat')
-                                ->label('Nomor Surat')
-                                ->extraInputAttributes(['id' => 'nomor_surat', 'class' => 'highlight-target']),
-                        ]),
-
-                    Step::make('Isi Ringkas')
-                        ->schema([
-                            TextInput::make('isi_ringkas')
-                                ->label('Isi Ringkas Surat')
-                                ->extraInputAttributes(['id' => 'isi_ringkas', 'class' => 'highlight-target']),
-                        ]),
-
-                    Step::make('Penanda Tangan')
-                        ->schema([
-                            TextInput::make('penandatangan')
-                                ->label('Penanda Tangan')
-                                ->extraInputAttributes(['id' => 'penandatangan', 'class' => 'highlight-target']),
-                        ]),
-
-                    Step::make('Tanggal Diterima')
-                        ->schema([
-                            DatePicker::make('tanggal_diterima')
-                                ->label('Tanggal Surat Diterima')
-                                ->extraInputAttributes(['id' => 'tanggal_diterima', 'class' => 'highlight-target']),
-                        ]),
-
-                    Step::make('Pengirim Surat')
-                        ->schema([
-                            TextInput::make('pengirim')
-                                ->label('Nama Pengirim')
-                                ->extraInputAttributes(['id' => 'pengirim', 'class' => 'highlight-target']),
-                        ]),
-                ])
-                ->submitAction('submit')
-                // ->cancelAction(URL::previous()),
+                \Filament\Forms\Components\Hidden::make('ocr_text'),
+                \Filament\Forms\Components\TextInput::make('nomor_surat')->label('Nomor Surat'),
+                \Filament\Forms\Components\TextInput::make('pengirim')->label('Pengirim'),
+                \Filament\Forms\Components\TextInput::make('penandatangan')->label('Penanda Tangan'),
             ])
             ->statePath('data');
     }
 
-    protected function goBack() {
-        back();
-    }
-
-    public function submit()
+    public function save()
     {
-        // Simpan ke database atau proses lebih lanjut
-        dd($this->form->getState());
+        $data = $this->form->getState();
+
+        // Simpan ke MongoDB
+        $surat = new Surat();
+        $surat->fill([
+            'pdf_path' => Session::get('uploaded_file_path'),
+            'ocr_text' => $data['ocr_text'],
+            'letter_type' => $data['letter_type'],
+            'extracted_fields' => [
+                'nomor_surat' => $data['nomor_surat'],
+                'pengirim' => $data['pengirim'],
+                'penandatangan' => $data['penandatangan'],
+            ]
+        ]);
+
+        $surat->save();
+
+        Notification::make()
+            ->title('Surat berhasil disimpan')
+            ->success()
+            ->send();
+
+        return redirect()->to(route('filament.admin.resources.surat-masuks.index'));
     }
 }

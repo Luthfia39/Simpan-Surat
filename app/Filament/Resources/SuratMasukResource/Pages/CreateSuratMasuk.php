@@ -17,7 +17,7 @@ use Filament\Pages\Concerns\InteractsWithFormActions;
 class CreateSuratMasuk extends Page
 {
     use InteractsWithFormActions;
-    
+
     protected static string $resource = SuratMasukResource::class;
 
     protected static string $view = 'filament.resources.surat-masuk-resource.pages.create';
@@ -28,12 +28,12 @@ class CreateSuratMasuk extends Page
 
     public function getTitle(): string
     {
-        return 'Input Surat'; 
+        return 'Input Surat';
     }
 
     public function mount(): void
     {
-        $this->form->fill(); 
+        $this->form->fill();
     }
 
     protected function getFormSchema(): array
@@ -71,31 +71,30 @@ class CreateSuratMasuk extends Page
             $filePath = $data['file_path']->store('surat', 'public');
             $fileContent = Storage::get($filePath);
 
-            // Kirim file ke API Flask
-            // $response = Http::attach(
-            //     'file',
-            //     $fileContent,
-            //     $data['file_path']->getClientOriginalName()
-            // )->post('http://127.0.0.1:3000/process_pdf');zzzz
+            $pdfUrl = asset('storage/' . $filePath);
 
-            $pdfUrl = asset('storage/' . $filePath); 
+            // $response = Http::withBody(json_encode(['pdf_url' => $pdfUrl]), 'application/json')
+            //     ->post('http://127.0.0.1:3000/process_pdf');
 
-            dd(['pdfUrl' => $pdfUrl, 'fileContent' => $fileContent, 'filePath' => $filePath]);
-
-            $response = Http::withBody(json_encode(['pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://127.0.0.1:3000/process_pdf');
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post('http://192.168.0.88:3000/process_pdf', [
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => json_encode(['pdf_url' => $pdfUrl]),
+            ]);
 
             // Cek apakah respons berhasil
-            if ($response->successful()) {
-                $responseData = $response->json();
+            if ($response->getStatusCode() === 200) {
+                $responseData = json_decode($response->getBody(), true);
+
+                dd($responseData);
 
                 // 🔍 Cek apakah format UGM
-                if (!isset($responseData['is_ugm_format']) || $responseData['is_ugm_format'] === false) {
-                    return [
-                        'status' => 'error',
-                        'message' => 'Format surat tidak sesuai template UGM.',
-                    ];
-                }
+                // if (!isset($responseData['is_ugm_format']) || $responseData['is_ugm_format'] === false) {
+                //     return [
+                //         'status' => 'error',
+                //         'message' => 'Format surat tidak sesuai template UGM.',
+                //     ];
+                // }
 
                 // ✅ Format valid → simpan ke session dan lanjut ke edit
                 Session::put('flask_response', $responseData);
@@ -103,7 +102,7 @@ class CreateSuratMasuk extends Page
 
                 return [
                     'status' => 'success',
-                    'message' => 'File berhasil diproses. Lanjut ke input data.',
+                    'message' => 'File berhasil diproses.',
                     'redirect' => route('filament.admin.resources.surat-masuks.edit'),
                 ];
             } else {
@@ -119,6 +118,7 @@ class CreateSuratMasuk extends Page
             ];
         }
     }
+
 
     protected function getFormActions(): array
     {
@@ -145,4 +145,3 @@ class CreateSuratMasuk extends Page
         ];
     }
 }
-
