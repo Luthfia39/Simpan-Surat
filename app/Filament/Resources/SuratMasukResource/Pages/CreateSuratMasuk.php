@@ -5,21 +5,26 @@ namespace App\Filament\Resources\SuratMasukResource\Pages;
 use App\Filament\Resources\SuratMasukResource;
 
 use Filament\Resources\Pages\Page;
-use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Filament\Pages\Concerns\InteractsWithFormActions;
 
 class CreateSuratMasuk extends Page
 {
+    use InteractsWithFormActions;
+    
     protected static string $resource = SuratMasukResource::class;
 
     protected static string $view = 'filament.resources.surat-masuk-resource.pages.create';
 
     public $file_path;
+
+    public ?array $data = [];
 
     public function getTitle(): string
     {
@@ -42,6 +47,13 @@ class CreateSuratMasuk extends Page
         ];
     }
 
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema($this->getFormSchema())
+            ->statePath('data');
+    }
+
     protected function submit(): array
     {
         $data = $this->form->getState();
@@ -60,29 +72,44 @@ class CreateSuratMasuk extends Page
             $fileContent = Storage::get($filePath);
 
             // Kirim file ke API Flask
-            $response = Http::attach(
-                'file',
-                $fileContent,
-                $data['file_path']->getClientOriginalName()
-            )->post('http://localhost:5000/process-pdf');
+            // $response = Http::attach(
+            //     'file',
+            //     $fileContent,
+            //     $data['file_path']->getClientOriginalName()
+            // )->post('http://127.0.0.1:3000/process_pdf');zzzz
 
-            // Periksa apakah respons berhasil
+            $pdfUrl = asset('storage/' . $filePath); 
+
+            dd(['pdfUrl' => $pdfUrl, 'fileContent' => $fileContent, 'filePath' => $filePath]);
+
+            $response = Http::withBody(json_encode(['pdf_url' => $pdfUrl]), 'application/json')
+                ->post('http://127.0.0.1:3000/process_pdf');
+
+            // Cek apakah respons berhasil
             if ($response->successful()) {
                 $responseData = $response->json();
 
-                // Simpan respons Flask dan path file ke sesi
+                // 🔍 Cek apakah format UGM
+                if (!isset($responseData['is_ugm_format']) || $responseData['is_ugm_format'] === false) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Format surat tidak sesuai template UGM.',
+                    ];
+                }
+
+                // ✅ Format valid → simpan ke session dan lanjut ke edit
                 Session::put('flask_response', $responseData);
                 Session::put('uploaded_file_path', $filePath);
 
                 return [
                     'status' => 'success',
-                    'message' => 'File berhasil diproses.',
-                    'redirect' => route('filament.admin.resources.surats.edit-response'),
+                    'message' => 'File berhasil diproses. Lanjut ke input data.',
+                    'redirect' => route('filament.admin.resources.surat-masuks.edit'),
                 ];
             } else {
                 return [
                     'status' => 'error',
-                    'message' => 'Gagal memproses file PDF di API Flask.',
+                    'message' => 'Maaf, terjadi error saat memproses file di server.',
                 ];
             }
         } catch (\Exception $e) {
@@ -101,17 +128,13 @@ class CreateSuratMasuk extends Page
                 ->action(function () {
                     $result = $this->submit();
 
-                    // Tampilkan notifikasi berdasarkan status
                     if ($result['status'] === 'success') {
                         Notification::make()
                             ->title($result['message'])
                             ->success()
                             ->send();
 
-                        // Redirect jika ada URL
-                        if (isset($result['redirect'])) {
-                            return redirect($result['redirect']);
-                        }
+                        return redirect($result['redirect']);
                     } else {
                         Notification::make()
                             ->title($result['message'])

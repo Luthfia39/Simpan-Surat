@@ -61,7 +61,7 @@ class SuratMasukResource extends Resource
     {
         return [
             'index' => Pages\CreateSuratMasuk::route('/'),
-            'edit' => Pages\EditSuratMasuk::route('/{record}/edit'),
+            'edit' => Pages\EditSuratMasuk::route('/edit'),
         ];
     }
 }
