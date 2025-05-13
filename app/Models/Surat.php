@@ -9,16 +9,18 @@ class Surat extends Model
 {
     use HasFactory;
 
-    protected $connection = 'mongodb'; // ✅ Koneksi MongoDB
-    protected $collection = 'surats'; // ✅ Nama collection di MongoDB
+    protected $connection = 'mongodb';
+    protected $collection = 'surats';
 
     protected $fillable = [
-        'type',
-        'nomor_surat',
-        'tanggal',
-        'pengirim',
-        'penerima',
-        'alamat',
-        'isi_surat'
+        'task_id',
+        'ocr_text',
+        'letter_type',
+        'extracted_fields',
+        'pdf_url',
+    ];
+
+    protected $casts = [
+        'extracted_fields' => 'array',
     ];
 }

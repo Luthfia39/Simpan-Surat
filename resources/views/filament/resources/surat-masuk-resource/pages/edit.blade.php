@@ -5,12 +5,20 @@
 
     <!-- Area Preview OCR -->
     <div id="ocr-content" contenteditable="true" class="p-4 min-h-[200px] border rounded bg-gray-50 mt-6 mb-6">
-        {!! nl2br(e(Session::get('flask_response.ocr_text'))) !!}
+        @if ($this->form->getState()['ocr_text'] ?? false)
+            {!! nl2br(e($this->form->getState()['ocr_text'])) !!}
+        @else
+            OCR text tidak tersedia.
+        @endif
     </div>
 
     @push('scripts')
         <script>
-            const flaskResponse = @json(Session::get('flask_response'));
+            // Ambil data dari PHP ke JS
+            const flaskResponse = {
+                extracted_fields: @json($this->form->getState()['extracted_fields'] ?? []),
+                ocr_text: @json($this->form->getState()['ocr_text'] ?? '')
+            };
 
             document.addEventListener('DOMContentLoaded', () => {
                 const ocrContent = document.getElementById('ocr-content');
@@ -18,6 +26,7 @@
 
                 if (!ocrContent || !extracted) return;
 
+                // Highlight semua field di extracted_fields
                 Object.values(extracted).forEach(val => {
                     if (!val) return;
 

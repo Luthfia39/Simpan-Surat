@@ -16,6 +16,7 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 
@@ -29,6 +30,9 @@ class EditSuratMasuk extends Page
 
     public ?array $data = [];
 
+    public ?string $taskId = null;
+    public ?object $record = null;
+
     // protected function getHeaderActions(): array
     // {
     //     return [
@@ -40,9 +44,12 @@ class EditSuratMasuk extends Page
 
     public function mount(): void
     {
-        $ocrData = Session::get('flask_response', null);
+        $this->taskId = Request::query('task_id') ?? Session::get('current_task_id');
+
+        $ocrData = Surat::where('task_id', $this->taskId)->first();
 
         $this->form->fill([
+            'pdf_path' => $ocrData['pdf_url'],
             'ocr_text' => $ocrData['ocr_text'],
             'letter_type' => $ocrData['letter_type'],
             'nomor_surat' => $ocrData['extracted_fields']['nomor_surat'] ?? '',
@@ -55,7 +62,13 @@ class EditSuratMasuk extends Page
     {
         return $form
             ->schema([
+                \Filament\Forms\Components\Hidden::make('pdf_path'),
                 \Filament\Forms\Components\Hidden::make('ocr_text'),
+                \Filament\Forms\Components\Select::make('letter_type')->label('Jenis Surat')->options([
+                    'Surat Pernyataan' => 'Surat Pernyataan',
+                    'Surat Keterangan' => 'Surat Keterangan',
+                    'Surat Tugas' => 'Surat Tugas',
+                ]),
                 \Filament\Forms\Components\TextInput::make('nomor_surat')->label('Nomor Surat'),
                 \Filament\Forms\Components\TextInput::make('pengirim')->label('Pengirim'),
                 \Filament\Forms\Components\TextInput::make('penandatangan')->label('Penanda Tangan'),
@@ -66,18 +79,21 @@ class EditSuratMasuk extends Page
     public function save()
     {
         $data = $this->form->getState();
+        $url = Session::get('current_url');
 
         // Simpan ke MongoDB
-        $surat = new Surat();
+        $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
+
         $surat->fill([
-            'pdf_path' => Session::get('uploaded_file_path'),
+            'task_id' => $this->taskId,
             'ocr_text' => $data['ocr_text'],
             'letter_type' => $data['letter_type'],
             'extracted_fields' => [
                 'nomor_surat' => $data['nomor_surat'],
                 'pengirim' => $data['pengirim'],
                 'penandatangan' => $data['penandatangan'],
-            ]
+            ],
+            'pdf_url' => $data['pdf_path'],
         ]);
 
         $surat->save();

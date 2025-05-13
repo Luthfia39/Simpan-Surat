@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\MongoController;
 use App\Http\Controllers\SuratController;
+use App\Models\Surat;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,6 +22,24 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('screen.welcome');
 });
+
+// Route::get('/hook', function (Request $request) {
+//     $data = $request->all();
+
+//     dd('dari hook : ' . json_encode($data));
+
+// $surat = Surat::where('pdf_url', $data['pdf_url'])->first();
+// if ($surat) {
+//     $surat->update([
+//         'is_ugm_format' => $data['is_ugm_format'],
+//         'letter_type' => $data['letter_type'],
+//         'ocr_text' => $data['ocr_text'],
+//         'extracted_fields' => json_encode($data['extracted_fields']),
+//     ]);
+// }
+
+//     return response()->json(['success' => true]);
+// });
 
 Route::controller(SuratController::class)->group(function () {
     Route::post('/delete/{id}', [SuratController::class, 'destroy'])->name('delete');
@@ -37,6 +59,26 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::get('/surat/{id}', [MongoController::class, 'show']); // Menampilkan surat berdasarkan ID
     // Route::put('/surat/{id}', [MongoController::class, 'update']); // Mengupdate surat
     Route::delete('/surat/{id}', [MongoController::class, 'destroy']); // Menghapus surat
+    Route::post('/hook', function (Request $request) {
+        try {
+            $data = $request->all();
+            Log::info('DARI HOOK:', $data);
+
+            Surat::create([
+                'task_id' => $data['task_id'],
+                'pdf_url' => $data['pdf_url'],
+                // 'is_ugm_format' => $data['is_ugm_format'],
+                'letter_type' => $data['letter_type'],
+                'ocr_text' => $data['ocr_text'],
+                'extracted_fields' => json_encode($data['extracted_fields']),
+            ]);
+
+            return response()->json(['message' => 'Diterima'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error di hook: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi error'], 500);
+        }
+    });
 });
 
 Route::get('/pdf', function () {
