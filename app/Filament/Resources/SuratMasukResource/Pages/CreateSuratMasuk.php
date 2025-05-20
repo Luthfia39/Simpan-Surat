@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Filament\Pages\Concerns\InteractsWithFormActions;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Poll;
 
 class CreateSuratMasuk extends Page
 {
@@ -29,6 +30,10 @@ class CreateSuratMasuk extends Page
     public ?array $data = [];
 
     public bool $isLoading = false;
+
+    public string $taskId = '';
+
+    public bool $shouldPoll = false;
 
     public function getTitle(): string
     {
@@ -60,6 +65,7 @@ class CreateSuratMasuk extends Page
 
     protected function submit(): array
     {
+        // $this->dispatch('show-loading');
         $data = $this->form->getState();
 
         // Validasi file
@@ -77,40 +83,41 @@ class CreateSuratMasuk extends Page
             $filePath = $data['file_path']->store('surat', 'public');
             $fileContent = Storage::get($filePath);
 
-            $taskId = (string) Str::uuid();
-            Storage::put('current_task_id', $taskId);
+            $this->taskId = (string) Str::uuid();
+            Storage::put('current_task_id', $this->taskId);
 
             $pdfUrl = asset('storage/' . $filePath);
 
-            $response = Http::withBody(json_encode(['task_id' => $taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://192.168.1.77:3000/submit_pdf');
+            $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
+                ->post('http://192.168.1.29:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {
-
                 Log::info('Data dari Flask:', ['data' => $response->json()]);
-
-                $surat = Surat::where('task_id', $taskId)->first();
-
-                if ($surat) {
-                    $this->dispatch('hide-loading');
-                    return [
-                        'status' => 'success',
-                        'message' => 'File sedang diproses.',
-                        'redirect' => route('filament.admin.resources.surat-masuks.edit', ['taskId' => $taskId]),
-                    ];
-                } else {
-                    return [
-                        'status' => 'waiting',
-                    ];
-                }
+                // $this->pollForOCRResult();
+                $this->shouldPoll = true;
+                return [
+                    'status' => 'success',
+                    'message' => 'File sedang diproses.',
+                    'redirect' => route('filament.admin.resources.surat-masuks.edit', ['taskId' => $this->taskId]),
+                ];
             } else {
+                $this->dispatch('hide-loading');
+                Notification::make()
+                    ->title('Maaf, terjadi error saat memproses file di server.')
+                    ->danger()
+                    ->send();
                 return [
                     'status' => 'error',
                     'message' => 'Maaf, terjadi error saat memproses file di server.',
                 ];
             }
         } catch (\Exception $e) {
+            $this->dispatch('hide-loading');
+            Notification::make()
+                ->title('Terjadi kesalahan: ' . $e->getMessage())
+                ->danger()
+                ->send();
             return [
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
@@ -118,6 +125,33 @@ class CreateSuratMasuk extends Page
         }
     }
 
+    // protected function submit() 
+    // {
+    //     $surat = Surat::where('task_id', (string) $this->taskId)->first();
+    //     Log::info('Surat dari MongoDB TRIAL:', ['surat' => $surat->task_id, 'taskId' => $this->taskId]);
+    // }
+
+    #[Poll(seconds: 2)]
+    public function pollForOCRResult()
+    {
+        Log::info(['Polling for OCR result...' => $this->shouldPoll]);
+        // if (!$this->taskId) return;
+        if (!$this->shouldPoll || !$this->taskId) return;
+
+        $surat = Surat::where('task_id', (string) $this->taskId)->first();
+        Log::info('Surat dari MongoDB:', ['surat' => $surat, 'taskId' => $this->taskId]);
+
+        if ($surat) {
+            Log::info('Surat ditemukan');
+            $this->dispatch('hide-loading');
+            $this->ocrData = json_decode($surat->ocr_text, true);
+
+            // Redirect langsung menggunakan Livewire
+            $this->redirect(
+                route('filament.admin.resources.surat-masuks.edit', ['taskId' => $surat->task_id])
+            );
+        }
+    }
 
     protected function getFormActions(): array
     {
@@ -126,21 +160,6 @@ class CreateSuratMasuk extends Page
                 ->label('Simpan Surat')
                 ->action(function () {
                     $result = $this->submit();
-
-                    if ($result['status'] === 'success') {
-                        Notification::make()
-                            ->title($result['message'])
-                            ->success()
-                            ->send();
-
-                        return redirect($result['redirect']);
-                    } elseif ($result['status'] === 'waiting') {
-                    } else {
-                        Notification::make()
-                            ->title($result['message'])
-                            ->danger()
-                            ->send();
-                    }
                 }),
         ];
     }
