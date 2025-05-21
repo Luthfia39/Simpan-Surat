@@ -14,11 +14,14 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
-use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
+use Filament\Actions\Action;
+use Livewire\Attributes\On;
 
 class EditSuratMasuk extends Page
 {
@@ -30,8 +33,11 @@ class EditSuratMasuk extends Page
 
     public ?array $data = [];
 
-    public ?string $taskId = null;
+    public ?string $taskId = '';
     public ?object $record = null;
+
+    public $annotations = [];
+    public string $ocr = '';
 
     // protected function getHeaderActions(): array
     // {
@@ -40,21 +46,26 @@ class EditSuratMasuk extends Page
     //     ];
     // }
 
-    use InteractsWithForms;
+    use InteractsWithFormActions;
 
     public function mount(): void
     {
-        $this->taskId = Request::query('task_id') ?? Session::get('current_task_id');
+        $this->taskId = request()->route('taskId')?? Session::get('current_task_id');
 
-        $ocrData = Surat::where('task_id', $this->taskId)->first();
+        $ocrData = Surat::where('task_id', (string) $this->taskId)->first();
+
+        Log::info('Surat dari yang mau diedit:', ['surat' => $ocrData, 'taskId' => $this->taskId]);
+        $this->ocr = $ocrData['ocr_text'] ?? '';
+
+        // dd($this->ocr);
 
         $this->form->fill([
-            'pdf_path' => $ocrData['pdf_url'],
-            'ocr_text' => $ocrData['ocr_text'],
+            'pdf_path' => $ocrData->pdf_url,
+            'ocr_text' => $this->ocr,
             'letter_type' => $ocrData['letter_type'],
-            'nomor_surat' => $ocrData['extracted_fields']['nomor_surat'] ?? '',
-            'pengirim' => $ocrData['extracted_fields']['pengirim'] ?? '',
-            'penandatangan' => $ocrData['extracted_fields']['penandatangan'] ?? '',
+            // 'extracted_fields' => $ocrData['extracted_fields'] ?? '',
+            // 'pengirim' => $ocrData['extracted_fields']['pengirim'] ?? '',
+            // 'penandatangan' => $ocrData['extracted_fields']['penandatangan'] ?? '',
         ]);
     }
 
@@ -64,45 +75,70 @@ class EditSuratMasuk extends Page
             ->schema([
                 \Filament\Forms\Components\Hidden::make('pdf_path'),
                 \Filament\Forms\Components\Hidden::make('ocr_text'),
+                // \Filament\Forms\Components\Hidden::make('extracted_fields')->default([]),
                 \Filament\Forms\Components\Select::make('letter_type')->label('Jenis Surat')->options([
                     'Surat Pernyataan' => 'Surat Pernyataan',
                     'Surat Keterangan' => 'Surat Keterangan',
                     'Surat Tugas' => 'Surat Tugas',
                 ]),
-                \Filament\Forms\Components\TextInput::make('nomor_surat')->label('Nomor Surat'),
-                \Filament\Forms\Components\TextInput::make('pengirim')->label('Pengirim'),
-                \Filament\Forms\Components\TextInput::make('penandatangan')->label('Penanda Tangan'),
+                // \Filament\Forms\Components\TextInput::make('nomor_surat')->label('Nomor Surat'),
+                // \Filament\Forms\Components\TextInput::make('pengirim')->label('Pengirim'),
+                // \Filament\Forms\Components\TextInput::make('penandatangan')->label('Penanda Tangan'),
             ])
             ->statePath('data');
     }
 
-    public function save()
+    public function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Simpan')
+                ->action(function () {
+                    $this->save();
+                }),
+        ];
+    }
+
+    #[On('updateOcrText')]
+    public function updateOcrText($ocr_text)
+    {
+        $this->ocr= $ocr_text;
+    }
+
+    protected function save()
     {
         $data = $this->form->getState();
         $url = Session::get('current_url');
 
-        // Simpan ke MongoDB
-        $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
-
-        $surat->fill([
-            'task_id' => $this->taskId,
-            'ocr_text' => $data['ocr_text'],
-            'letter_type' => $data['letter_type'],
-            'extracted_fields' => [
-                'nomor_surat' => $data['nomor_surat'],
-                'pengirim' => $data['pengirim'],
-                'penandatangan' => $data['penandatangan'],
-            ],
-            'pdf_url' => $data['pdf_path'],
+        dd([
+            'data' => $data,
+            'url' => $url,
+            'ocr' => $this->ocr,
+            'extracted_fields' => $this->annotations
         ]);
 
-        $surat->save();
+        // Simpan ke MongoDB
+        // $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
 
-        Notification::make()
-            ->title('Surat berhasil disimpan')
-            ->success()
-            ->send();
+        // $surat->fill([
+        //     // 'task_id' => $this->taskId,
+        //     'ocr_text' => $data['ocr_text'],
+        //     'letter_type' => $data['letter_type'],
+        //     'extracted_fields' => [
+        //         'nomor_surat' => $data['nomor_surat'],
+        //         'pengirim' => $data['pengirim'],
+        //         'penandatangan' => $data['penandatangan'],
+        //     ],
+        //     'pdf_url' => $data['pdf_path'],
+        // ]);
 
-        return redirect()->to(route('filament.admin.resources.surat-masuks.index'));
+        // $surat->save();
+
+        // Notification::make()
+        //     ->title('Surat berhasil disimpan')
+        //     ->success()
+        //     ->send();
+
+        // return redirect()->to(route('filament.admin.resources.surat-masuks.index'));
     }
 }
