@@ -4,7 +4,6 @@
 
         <!-- Area Preview OCR -->
         <div 
-            wire:key="ocr-editor"
             id="ocr-content" 
             contenteditable="true"
             class="p-4 min-h-[200px] border rounded bg-gray-50 mb-6 whitespace-pre-wrap"
@@ -38,7 +37,9 @@
 
     @push('scripts')
         <script>
+            let ocr_text = '';
             let currentSelection = null;
+            let annotations = [];
 
             // Mapping jenis → warna
             const typeColors = {
@@ -56,11 +57,37 @@
                 typingTimer = setTimeout(() => {
                     const content = document.getElementById("ocr-content").innerHTML;
 
-                    Livewire.dispatch('updateOcrText', {
-                        ocr_text: content
-                    });
+                    ocr_text = content;
+
+                    renderHighlights();
                 }, interval);
             });
+
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            function renderHighlights() {
+
+                annotations.forEach((ann) => {
+                    const key = Object.keys(ann);
+                    const value = ann[key];
+
+                    console.log('key : ', key, 'value : ', value);
+
+                    if (!value || typeof value !== 'string') return;
+
+                    const safeValue = escapeRegExp(value);
+                    const regex = new RegExp(safeValue, 'gi');
+
+                    ocr_text = ocr_text.replace(regex, (match) => {
+                        return `<mark data-type="${key}" style="background-color:${typeColors[key] || '#ffff00'}">${match}</mark>`;
+                    });
+                });
+
+                const container = document.getElementById("ocr-content");
+                container.innerHTML = ocr_text;
+            }
 
             function showModalAtPosition(range) {
                 // Hapus semua modal sebelum menampilkan yang baru
@@ -89,8 +116,6 @@
                 });
             }
 
-            const annotations = [];
-
             function saveAnnotation() {
                 const selectedType = document.getElementById("type-dropdown").value;
                 if (!selectedType || !currentSelection) {
@@ -106,19 +131,7 @@
 
                 annotations.push({ [selectedType]: selectedText });
 
-                // Buat elemen mark untuk highlight
-                const mark = document.createElement("mark");
-                const color = typeColors[selectedType] || "#ffffff";
-                mark.style.backgroundColor = color;
-                mark.dataset.annotationType = selectedType;
-
-                // Bungkus teks yang dipilih dengan mark
-                range.surroundContents(mark);
-
-                // Update hidden input dengan JSON string
-                const input = document.getElementById("annotations-input");
-                input.value = JSON.stringify(annotations);
-                input.dispatchEvent(new Event('input'));
+                renderHighlights();
 
                 // Hapus semua modal
                 document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
@@ -129,8 +142,27 @@
                 console.log('hasil seleksi : ', annotations);
             }
 
+            function getPlainTextFromContent() {
+                // Buat elemen sementara untuk parsing
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = ocr_text;
+
+                // Hilangkan semua <mark>, biarkan teks saja
+                return tempDiv.textContent || tempDiv.innerText || "";
+            }
+
             // Event Listener untuk highlight
             document.addEventListener("DOMContentLoaded", () => {
+                Livewire.on('ocr-loaded',  (data) => {
+                    const { ocr, extracted_fields } = data[0];
+                    ocr_text = ocr;
+                    annotations = Object.entries(extracted_fields).map(([key, value]) => {
+                        return { [key]: value[0] };
+                    });
+                    document.getElementById("ocr-content").innerHTML = ocr;
+                    renderHighlights();
+                })
+                
                 const editableDiv = document.getElementById("ocr-content");
 
                 editableDiv.addEventListener("mouseup", () => {
@@ -149,6 +181,11 @@
                         }
                     }
                 });
+
+                Livewire.on('update-data', ocr => {
+                    const ocr_final = getPlainTextFromContent();
+                    Livewire.dispatch('data-ready', {ocr_final, annotations})
+                })
             });
         </script>
     @endpush

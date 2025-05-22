@@ -36,8 +36,10 @@ class EditSuratMasuk extends Page
     public ?string $taskId = '';
     public ?object $record = null;
 
-    public $annotations = [];
+    public $annotations;
     public string $ocr = '';
+
+    // protected $listeners = ['updateAnnotations' => 'updateAnnotations'];
 
     // protected function getHeaderActions(): array
     // {
@@ -56,6 +58,11 @@ class EditSuratMasuk extends Page
 
         Log::info('Surat dari yang mau diedit:', ['surat' => $ocrData, 'taskId' => $this->taskId]);
         $this->ocr = $ocrData['ocr_text'] ?? '';
+
+        $this->dispatch('ocr-loaded', [
+            'ocr' => $ocrData['ocr_text'],
+            'extracted_fields' => $ocrData['extracted_fields'],
+        ]);
 
         // dd($this->ocr);
 
@@ -94,50 +101,63 @@ class EditSuratMasuk extends Page
             Action::make('save')
                 ->label('Simpan')
                 ->action(function () {
-                    $this->save();
+                    $this->onProcessSave();
                 }),
         ];
     }
 
-    #[On('updateOcrText')]
-    public function updateOcrText($ocr_text)
+    #[On('data-ready')]
+    public function updateData($ocr_final, $annotations)
     {
-        $this->ocr= $ocr_text;
+        $this->ocr= $ocr_final;
+        $this->annotations= $annotations;
+        $this->save();
+    }
+
+    protected function onProcessSave() {
+        $this->dispatch('update-data');
     }
 
     protected function save()
     {
         $data = $this->form->getState();
-        $url = Session::get('current_url');
 
-        dd([
-            'data' => $data,
-            'url' => $url,
-            'ocr' => $this->ocr,
-            'extracted_fields' => $this->annotations
+        // dd(['data' => $data, 'ocr' => $this->ocr, 'annotations' => $this->annotations]);
+
+        $grouped = [];
+
+        // $decoded = json_decode($this->annotations, true);
+        // $extracted_fields = is_array($decoded) ? $decoded : [];
+
+        foreach ($this->annotations as $annotation) {
+            $type = key($annotation);
+            $text = $annotation[$type];
+
+            if (!isset($grouped[$type])) {
+                $grouped[$type] = [];
+            }
+
+            $grouped[$type][] = $text;
+        }
+
+        // // Simpan ke MongoDB
+        $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
+
+        $surat->fill([
+            // 'task_id' => $this->taskId,
+            'ocr_text' => $this->ocr,
+            'letter_type' => $data['letter_type'],
+            'extracted_fields' => $grouped,
+            // 'extracted_fields' => json_encode($grouped),
+            'pdf_url' => $data['pdf_path'],
         ]);
 
-        // Simpan ke MongoDB
-        // $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
+        $surat->save();
 
-        // $surat->fill([
-        //     // 'task_id' => $this->taskId,
-        //     'ocr_text' => $data['ocr_text'],
-        //     'letter_type' => $data['letter_type'],
-        //     'extracted_fields' => [
-        //         'nomor_surat' => $data['nomor_surat'],
-        //         'pengirim' => $data['pengirim'],
-        //         'penandatangan' => $data['penandatangan'],
-        //     ],
-        //     'pdf_url' => $data['pdf_path'],
-        // ]);
-
-        // $surat->save();
-
-        // Notification::make()
-        //     ->title('Surat berhasil disimpan')
-        //     ->success()
-        //     ->send();
+        Notification::make()
+            ->title('Surat berhasil disimpan')
+            ->success()
+            ->send();
 
         // return redirect()->to(route('filament.admin.resources.surat-masuks.index'));
     }
