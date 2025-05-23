@@ -13,7 +13,7 @@ use Filament\Forms\Components\DatePicker;
 
 class PengantarPenelitian extends CreateTemplate
 {
-    public static ?string $view = 'template.pengantar-penelitian';
+    public static ?string $view = 'templates.pengantar-penelitian';
 
     public static function getSchema(): array
     {
