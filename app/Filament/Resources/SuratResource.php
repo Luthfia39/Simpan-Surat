@@ -20,19 +20,19 @@ class SuratResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $navigationLabel = 'List Surat';
 
     protected static ?string $slug = '/';
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                //
-            ]);
-    }
+    // public static function form(Form $form): Form
+    // {
+    //     return $form
+    //         ->schema([
+    //             //
+    //         ]);
+    // }
 
     public static function table(Table $table): Table
     {

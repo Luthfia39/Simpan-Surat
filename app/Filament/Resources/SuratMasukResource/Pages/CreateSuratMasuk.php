@@ -89,7 +89,7 @@ class CreateSuratMasuk extends Page
             $pdfUrl = asset('storage/' . $filePath);
 
             $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://192.168.1.29:3000/submit_pdf');
+                ->post('http://172.20.0.202:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {

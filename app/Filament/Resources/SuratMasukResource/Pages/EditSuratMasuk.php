@@ -122,8 +122,6 @@ class EditSuratMasuk extends Page
     {
         $data = $this->form->getState();
 
-        // dd(['data' => $data, 'ocr' => $this->ocr, 'annotations' => $this->annotations]);
-
         $grouped = [];
 
         // $decoded = json_decode($this->annotations, true);
@@ -159,6 +157,6 @@ class EditSuratMasuk extends Page
             ->success()
             ->send();
 
-        // return redirect()->to(route('filament.admin.resources.surat-masuks.index'));
+        return redirect()->to(route('filament.admin.resources...index'));
     }
 }
