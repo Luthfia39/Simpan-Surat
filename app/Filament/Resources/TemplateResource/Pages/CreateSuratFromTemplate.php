@@ -12,7 +12,9 @@ use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Js;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\SuratKeluar;
 use Throwable;
 
 class CreateSuratFromTemplate extends Page
@@ -95,33 +97,80 @@ class CreateSuratFromTemplate extends Page
     protected function getCancelFormAction(): Action
     {
         return Action::make('cancel')
-            ->label(__('filament-panels::resources/pages/edit-record.form.actions.cancel.label'))
+            ->label('Batal')
             ->alpineClickHandler('document.referrer ? window.history.back() : (window.location.href = '.Js::from($this->previousUrl ?? static::getResource()::getUrl()).')')
             ->color('gray');
     }
+
+    // protected function generatePdf(): StreamedResponse|false
+    // {
+    //     $data = $this->form->getState();
+
+    //     try {
+    //         $view = $this->class::$view;
+    //         $pdf = Pdf::loadView($view, $data);
+
+    //         Notification::make()
+    //             ->success()
+    //             ->title('Surat berhasil dibuat')
+    //             ->send();
+
+    //         $filename = $this->getRecord()->name.'.pdf';
+
+    //         // Simpan file ke storage
+    //         $filePath = $data['file_path']->store('suratKeluar', 'public');
+
+    //         return response()->streamDownload(function () use ($pdf) {
+    //             echo $pdf->stream();
+    //         }, $filename);
+    //     } catch (Throwable $exception) {
+    //         Notification::make()
+    //             ->danger()
+    //             ->title($exception)
+    //             ->send();
+
+    //         return false;
+    //     }
+    // }
 
     protected function generatePdf(): StreamedResponse|false
     {
         $data = $this->form->getState();
 
         try {
-            $view = $this->class::$view;
+            // 1. Load view template surat
+            $view = $this->class::$view; // Contoh: 'exports.surat-template'
             $pdf = Pdf::loadView($view, $data);
 
+            // 2. Buat nama file unik
+            $filename = $this->getRecord()->name . '-' . now()->format('Y-m-d_H-i-s') . '.pdf';
+            $storagePath = 'suratKeluar/' . $filename;
+
+            // 3. Simpan PDF ke storage (public disk)
+            Storage::disk('public')->put($storagePath, $pdf->output());
+
+            SuratKeluar::create([
+                // 'name' => $this->getRecord()->name,
+                'pdf_url' => $filename,
+                'major' => $data['prodi'],
+            ]);
+
+            // 5. Tampilkan notifikasi sukses
             Notification::make()
                 ->success()
                 ->title('Surat berhasil dibuat')
                 ->send();
 
-            $filename = $this->getRecord()->name.'.pdf';
-
+            // 6. Download file sebagai stream
             return response()->streamDownload(function () use ($pdf) {
                 echo $pdf->stream();
             }, $filename);
+
         } catch (Throwable $exception) {
             Notification::make()
                 ->danger()
-                ->title($exception)
+                ->title('Gagal membuat surat')
+                ->body($exception->getMessage())
                 ->send();
 
             return false;

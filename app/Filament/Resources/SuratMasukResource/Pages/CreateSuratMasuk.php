@@ -80,7 +80,7 @@ class CreateSuratMasuk extends Page
             $this->dispatch('show-loading');
 
             // Simpan file ke storage
-            $filePath = $data['file_path']->store('surat', 'public');
+            $filePath = $data['file_path']->store('suratMasuk', 'public');
             $fileContent = Storage::get($filePath);
 
             $this->taskId = (string) Str::uuid();
