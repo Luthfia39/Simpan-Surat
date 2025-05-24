@@ -20,6 +20,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\FileUpload;
 use Filament\Resources\Pages\Page;
+use Filament\Forms\Components\TextInput;
 
 class SuratMasukResource extends Resource
 {
@@ -118,6 +119,7 @@ class SuratMasukResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -140,6 +142,7 @@ class SuratMasukResource extends Resource
             'index' => Pages\ListSuratMasuks::route('/'),
             'create' => Pages\CreateSuratMasuk::route('/create'),
             'edit' => Pages\EditSuratMasuk::route('/edit/{record}'),
+            'view' => Pages\ViewSuratMasuk::route('/view/{record}'),
         ];
     }
 }

@@ -88,6 +88,7 @@ class SuratKeluarResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -109,6 +110,7 @@ class SuratKeluarResource extends Resource
         return [
             'index' => Pages\ListSuratKeluars::route('/'),
             'create' => Templates\ListTemplates::route('/create'),
+            'view' => Pages\ViewSuratKeluar::route('/view/{record}'),
             // 'edit' => Pages\EditSuratKeluar::route('/{record}/edit'),
         ];
     }
