@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->brandName('SuratTEDI')
             ->darkMode(false)
             ->font('Plus Jakarta Sans')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
