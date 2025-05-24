@@ -4,7 +4,6 @@ namespace App\Filament\Resources\SuratMasukResource\Pages;
 
 use App\Filament\Resources\SuratMasukResource;
 use App\Models\Surat;
-use Filament\Resources\Pages\Page;
 use Filament\Forms\Form;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -12,15 +11,13 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
-use Filament\Pages\Concerns\InteractsWithFormActions;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Poll;
+use Filament\Resources\Pages\CreateRecord;
 
-class CreateSuratMasuk extends Page
+class CreateSuratMasuk extends CreateRecord
 {
-    use InteractsWithFormActions;
-
     protected static string $resource = SuratMasukResource::class;
 
     protected static string $view = 'filament.resources.surat-masuk-resource.pages.create';
@@ -35,37 +32,29 @@ class CreateSuratMasuk extends Page
 
     public bool $shouldPoll = false;
 
-    public function getTitle(): string
+    public static function shouldRegisterInNavigation(): bool
     {
-        return 'Input Surat';
+        return true; 
+    }
+
+    public function getHeading(): string
+    {
+        return "Tambah Surat Masuk";
+    }
+
+    public function getSubheading(): string
+    {
+        return "Unggah dokumen surat masuk Anda, agar dapat terarsipkan dengan rapi dan mudah ditelusuri.";
     }
 
     public function mount(): void
     {
+        parent::mount();
         $this->form->fill();
     }
-
-    protected function getFormSchema(): array
-    {
-        return [
-            FileUpload::make('file_path')
-                ->label('Unggah File Surat')
-                ->acceptedFileTypes(['application/pdf'])
-                ->required()
-                ->storeFiles(false),
-        ];
-    }
-
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema($this->getFormSchema())
-            ->statePath('data');
-    }
-
+    
     protected function submit(): array
     {
-        // $this->dispatch('show-loading');
         $data = $this->form->getState();
 
         // Validasi file
@@ -94,7 +83,6 @@ class CreateSuratMasuk extends Page
             // Cek apakah respons berhasil
             if ($response->successful()) {
                 Log::info('Data dari Flask:', ['data' => $response->json()]);
-                // $this->pollForOCRResult();
                 $this->shouldPoll = true;
                 return [
                     'status' => 'success',
@@ -125,12 +113,6 @@ class CreateSuratMasuk extends Page
         }
     }
 
-    // protected function submit() 
-    // {
-    //     $surat = Surat::where('task_id', (string) $this->taskId)->first();
-    //     Log::info('Surat dari MongoDB TRIAL:', ['surat' => $surat->task_id, 'taskId' => $this->taskId]);
-    // }
-
     #[Poll(seconds: 2)]
     public function pollForOCRResult()
     {
@@ -148,7 +130,7 @@ class CreateSuratMasuk extends Page
 
             // Redirect langsung menggunakan Livewire
             $this->redirect(
-                route('filament.admin.resources.surat-masuks.edit', ['taskId' => $surat->task_id])
+                route('filament.admin.resources.surat-masuks.edit', ['record' => $surat->task_id])
             );
         }
     }

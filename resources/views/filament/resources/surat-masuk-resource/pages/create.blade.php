@@ -1,4 +1,11 @@
 <x-filament-panels::page>
+    
+    <x-filament-panels::form>
+        {{ $this->form }}
+
+        <x-filament-panels::form.actions :actions="$this->getFormActions()" />
+    </x-filament-panels::form>
+    <div wire:poll.2s="pollForOCRResult" style="display: none;"></div>
     <div 
         x-data="{ isLoading: false }" 
         x-on:show-loading.window="isLoading = true" 
@@ -18,10 +25,4 @@
         </div>
     </template>
     </div>
-    <x-filament-panels::form>
-        {{ $this->form }}
-
-        <x-filament-panels::form.actions :actions="$this->getFormActions()" />
-    </x-filament-panels::form>
-    <div wire:poll.2s="pollForOCRResult" style="display: none;"></div>
 </x-filament-panels::page>

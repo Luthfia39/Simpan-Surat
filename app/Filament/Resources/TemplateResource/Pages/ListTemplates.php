@@ -19,12 +19,11 @@ class ListTemplates extends ListRecords
 
     public function getHeading(): string
     {
-        $user = auth()->user();
-        return "Halo, {$user->name}";
+        return "Daftar Template Surat";
     }
 
     public function getSubheading(): string
     {
-        return 'Pilih salah satu template di bawah ini untuk mulai membuat surat';
+        return 'Pilih salah satu template di bawah ini untuk mulai membuat surat.';
     }
 }

@@ -23,7 +23,9 @@ use Illuminate\Support\Facades\Log;
 use Filament\Actions\Action;
 use Livewire\Attributes\On;
 
-class EditSuratMasuk extends Page
+use Illuminate\Database\Eloquent\Model;
+
+class EditSuratMasuk extends EditRecord
 {
     protected static string $resource = SuratMasukResource::class;
 
@@ -34,29 +36,49 @@ class EditSuratMasuk extends Page
     public ?array $data = [];
 
     public ?string $taskId = '';
-    public ?object $record = null;
 
     public $annotations;
+
     public string $ocr = '';
 
-    // protected $listeners = ['updateAnnotations' => 'updateAnnotations'];
+    public function getHeading(): string
+    {
+        return "Hasil OCR";
+    }
 
-    // protected function getHeaderActions(): array
-    // {
-    //     return [
-    //         Actions\DeleteAction::make(),
-    //     ];
-    // }
+    public function getSubheading(): string
+    {
+        return "Cek kembali hasil OCR berikut ini, pastikan data yang disimpan telah sesuai.";
+    }
 
     use InteractsWithFormActions;
 
-    public function mount(): void
+    protected function resolveRecord(string|int $key): Model
     {
-        $this->taskId = request()->route('taskId')?? Session::get('current_task_id');
+        $record = Surat::where('task_id', $key)->first();
 
-        $ocrData = Surat::where('task_id', (string) $this->taskId)->first();
+        if (!$record) {
+            abort(404, 'Data tidak ditemukan');
+        }
 
-        Log::info('Surat dari yang mau diedit:', ['surat' => $ocrData, 'taskId' => $this->taskId]);
+        return $record;
+    }
+
+    public function mount($record): void
+    {
+        $this->taskId = $record; // atau ambil dari route
+
+        parent::mount($record);
+
+        $ocrData = $this->record;
+
+        // $ocrData = Surat::where('task_id', $this->taskId)->first();
+
+        Log::info('Surat dari yang mau diedit:', [
+            'surat' => $ocrData,
+            'taskId' => $this->taskId
+        ]);
+
         $this->ocr = $ocrData['ocr_text'] ?? '';
 
         $this->dispatch('ocr-loaded', [
@@ -64,15 +86,10 @@ class EditSuratMasuk extends Page
             'extracted_fields' => $ocrData['extracted_fields'],
         ]);
 
-        // dd($this->ocr);
-
         $this->form->fill([
             'pdf_path' => $ocrData->pdf_url,
             'ocr_text' => $this->ocr,
             'letter_type' => $ocrData['letter_type'],
-            // 'extracted_fields' => $ocrData['extracted_fields'] ?? '',
-            // 'pengirim' => $ocrData['extracted_fields']['pengirim'] ?? '',
-            // 'penandatangan' => $ocrData['extracted_fields']['penandatangan'] ?? '',
         ]);
     }
 
@@ -114,18 +131,15 @@ class EditSuratMasuk extends Page
         $this->save();
     }
 
-    protected function onProcessSave() {
+    public function onProcessSave() {
         $this->dispatch('update-data');
     }
 
-    protected function save()
+    public function save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true): void
     {
         $data = $this->form->getState();
 
         $grouped = [];
-
-        // $decoded = json_decode($this->annotations, true);
-        // $extracted_fields = is_array($decoded) ? $decoded : [];
 
         foreach ($this->annotations as $annotation) {
             $type = key($annotation);
@@ -138,15 +152,13 @@ class EditSuratMasuk extends Page
             $grouped[$type][] = $text;
         }
 
-        // // Simpan ke MongoDB
+        // Simpan ke MongoDB
         $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
 
         $surat->fill([
-            // 'task_id' => $this->taskId,
             'ocr_text' => $this->ocr,
             'letter_type' => $data['letter_type'],
             'extracted_fields' => $grouped,
-            // 'extracted_fields' => json_encode($grouped),
             'pdf_url' => $data['pdf_path'],
         ]);
 
@@ -157,6 +169,11 @@ class EditSuratMasuk extends Page
             ->success()
             ->send();
 
-        return redirect()->to(route('filament.admin.resources...index'));
+        // Jika ingin redirect, aktifkan bagian ini
+        if ($shouldRedirect) {
+            $this->redirect(
+                route('filament.admin.resources.surat-masuks.index')
+            );
+        }
     }
 }

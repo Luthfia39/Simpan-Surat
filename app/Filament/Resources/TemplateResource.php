@@ -26,7 +26,11 @@ class TemplateResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $navigationLabel = 'Surat Keluar';
+    protected static bool $shouldRegisterNavigation = false;
+
+    // protected static ?string $navigationLabel = 'Buat Surat Keluar';
+
+    // protected static ?string $navigationGroup = 'Surat Keluar';
 
     public static function form(Form $form): Form
     {
