@@ -78,7 +78,7 @@ class CreateSuratMasuk extends CreateRecord
             $pdfUrl = asset('storage/' . $filePath);
 
             $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://172.20.0.202:3000/submit_pdf');
+                ->post('http://10.33.73.36:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {
@@ -87,7 +87,7 @@ class CreateSuratMasuk extends CreateRecord
                 return [
                     'status' => 'success',
                     'message' => 'File sedang diproses.',
-                    'redirect' => route('filament.admin.resources.surat-masuks.edit', ['taskId' => $this->taskId]),
+                    // 'redirect' => route('filament.admin.resources.surat-masuks.edit', ['record' => $this->taskId]),
                 ];
             } else {
                 $this->dispatch('hide-loading');
@@ -124,6 +124,7 @@ class CreateSuratMasuk extends CreateRecord
         Log::info('Surat dari MongoDB:', ['surat' => $surat, 'taskId' => $this->taskId]);
 
         if ($surat) {
+            $this->shouldPoll = false;
             Log::info('Surat ditemukan');
             $this->dispatch('hide-loading');
             $this->ocrData = json_decode($surat->ocr_text, true);

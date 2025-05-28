@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Blue,
+                // 'secondary' => Color::Amber,
             ])
             ->sidebarCollapsibleOnDesktop()
             ->brandName('SuratTEDI')

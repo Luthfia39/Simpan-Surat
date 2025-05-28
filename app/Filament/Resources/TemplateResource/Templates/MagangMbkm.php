@@ -17,6 +17,11 @@ class MagangMbkm extends CreateTemplate
     {
         return [
             Section::make([
+                TextInput::make('nomor_surat')
+                    ->label('Nomor Surat')
+                    ->minLength(1)
+                    ->mask('999999999999999999')
+                    ->required(),
                 TextInput::make('nama')
                     ->minLength(2)
                     ->required(),

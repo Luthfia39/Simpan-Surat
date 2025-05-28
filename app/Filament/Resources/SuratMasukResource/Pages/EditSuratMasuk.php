@@ -75,7 +75,7 @@ class EditSuratMasuk extends EditRecord
         // $ocrData = Surat::where('task_id', $this->taskId)->first();
 
         Log::info('Surat dari yang mau diedit:', [
-            'surat' => $ocrData,
+            'surat' => $ocrData['ocr_text'],
             'taskId' => $this->taskId
         ]);
 
@@ -87,7 +87,7 @@ class EditSuratMasuk extends EditRecord
         ]);
 
         $this->form->fill([
-            'pdf_path' => $ocrData->pdf_url,
+            'pdf_path' => $ocrData['pdf_url'],
             'ocr_text' => $this->ocr,
             'letter_type' => $ocrData['letter_type'],
         ]);
@@ -104,6 +104,7 @@ class EditSuratMasuk extends EditRecord
                     'Surat Pernyataan' => 'Surat Pernyataan',
                     'Surat Keterangan' => 'Surat Keterangan',
                     'Surat Tugas' => 'Surat Tugas',
+                    'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
                 ]),
                 // \Filament\Forms\Components\TextInput::make('nomor_surat')->label('Nomor Surat'),
                 // \Filament\Forms\Components\TextInput::make('pengirim')->label('Pengirim'),

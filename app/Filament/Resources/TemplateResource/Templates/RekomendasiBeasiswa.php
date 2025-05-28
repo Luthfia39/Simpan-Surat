@@ -6,6 +6,8 @@ use App\Forms\Components\IpkInput;
 use App\Forms\Components\NimInput;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
+use App\Enums\Major;
+use Filament\Forms\Components\Select;
 
 class RekomendasiBeasiswa extends CreateTemplate
 {
@@ -15,6 +17,11 @@ class RekomendasiBeasiswa extends CreateTemplate
     {
         return [
             Section::make([
+                TextInput::make('nomor_surat')
+                    ->label('Nomor Surat')
+                    ->minLength(1)
+                    ->mask('999999999999999999')
+                    ->required(),
                 TextInput::make('nama')
                     ->minLength(2)
                     ->required(),
@@ -22,6 +29,10 @@ class RekomendasiBeasiswa extends CreateTemplate
                     ->label('NIM')
                     ->validationAttribute('NIM')
                     ->format()
+                    ->required(),
+                Select::make('prodi')
+                    ->label('Program Studi')
+                    ->options(Major::toArray())
                     ->required(),
                 IpkInput::make('ipk')
                     ->label('IPK')

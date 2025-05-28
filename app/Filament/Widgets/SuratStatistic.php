@@ -19,7 +19,7 @@ class SuratStatistic extends BaseWidget
                 // ->descriptionIcon('heroicon-o-arrow-path')
                 ->color('warning'), // Kuning
 
-            Stat::make('Total Keluar', $suratKeluar)
+            Stat::make('Surat Keluar', $suratKeluar)
                 ->description('Jumlah surat keluar terbaru')
                 // ->descriptionIcon('heroicon-o-arrow-path')
                 ->color('primary'), // Biru

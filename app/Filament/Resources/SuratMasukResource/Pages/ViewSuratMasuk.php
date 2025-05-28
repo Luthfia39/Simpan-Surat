@@ -40,8 +40,8 @@ class ViewSuratMasuk extends ViewRecord
                     ->badge()
                     ->color('warning'),
 
-                TextEntry::make('Teks Surat')
-                    ->getStateUsing(fn ($record) => $record->ocr_text ?? '-')
+                TextEntry::make('Isi Surat')
+                    ->getStateUsing(fn ($record) => $record->extracted_fields['isi_surat'][0] ?? '-')
                     ->columnSpanFull()
                     ->extraAttributes(['class' => 'text-justify']),
 
