@@ -29,14 +29,17 @@ use Filament\Support\Colors;
 use Laravel\Socialite\Contracts\User as SocialiteUserContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 
+use App\Models\User;
+use Filament\Facades\Filament;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->default()
-            ->id('admin')
-            ->path('admin')
+            ->id('users')
+            ->path('users')
             ->login(Login::class)
             ->colors([
                 'primary' => Color::Blue,
@@ -96,6 +99,39 @@ class AdminPanelProvider extends PanelProvider
                     ->slug('user')
                     // (optional) Change the associated model class.
                     ->userModelClass(\App\Models\User::class)
+                    ->createUserUsing(function (string $provider, SocialiteUserContract $oauthUser, FilamentSocialitePlugin $plugin) {
+                        // Logic to create a new user.
+                        $user = User::where('email', $oauthUser->getEmail())->first();
+
+                        \Log::info(['user' =>$user]);
+
+                        if (!$user) {
+
+                            \Log::info(['nama' => $oauthUser->getName()]);
+
+                            $userData = [
+                                'name' => $oauthUser->getName(),
+                                'email' => $oauthUser->getEmail(),
+                                'password' => Hash::make(Str::uuid()), // Set password ke UUID acak yang di-hash
+                                'email_verified_at' => now(),
+                                'google_id' => $oauthUser->getId(),
+                                'google_avatar' => $oauthUser->getAvatar(),
+                                'is_admin' => false,
+                                'nim' => null,
+                                'prodi' => null,
+                            ];
+
+                            $user = User::create($userData);
+                        } else {
+                            // ... logika update user jika diperlukan
+                        }
+
+                        return $user;
+                    })
+                    ->redirectAfterLoginUsing(function (string $provider, FilamentSocialiteUserContract $socialiteUser, FilamentSocialitePlugin $plugin) {
+                        // Change the redirect behaviour here.
+                        return Filament::getPanelUrl();
+                    })
             );
     }
 }

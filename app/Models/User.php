@@ -23,7 +23,13 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
     protected $fillable = [
         'name',
         'email',
-        // 'google_id',
+        'password',
+        'google_id',
+        'google_avatar',
+        'email_verified_at',
+        'is_admin',
+        'nim',
+        'prodi',
     ];
 
     /**
@@ -53,6 +59,7 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return str_ends_with($this->email, '@mail.ugm.ac.id');
+        return true;
+        // return str_ends_with($this->email, '@mail.ugm.ac.id');
     }
 }
