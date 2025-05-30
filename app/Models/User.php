@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Auth\Authenticatable;
+use MongoDB\Laravel\Eloquent\Model as Eloquent;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class User extends Authenticatable
+class User extends Eloquent implements AuthenticatableContract, FilamentUser
 {
-    use HasFactory, Notifiable;
+    use Authenticatable; // Trait untuk autentikasi Laravel
+
+    protected $connection = 'mongodb';
+    protected $collection = 'users';
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +24,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'google_id',
+        'google_avatar',
+        'email_verified_at',
+        'is_admin',
+        'nim',
+        'prodi',
     ];
 
     /**
@@ -28,12 +38,11 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Get the casts for the model.
      *
      * @return array<string, string>
      */
@@ -43,5 +52,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Determine if the user can access the Filament admin panel.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'user') {
+            return true;
+        }
+        return false;
+        // return str_ends_with($this->email, '@mail.ugm.ac.id');
     }
 }
