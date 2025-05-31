@@ -1,7 +1,11 @@
 <?php
 
-use App\Http\Controllers\PdfController;
+use App\Http\Controllers\MongoController;
 use App\Http\Controllers\SuratController;
+use App\Models\Surat;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 use Laravel\Socialite\Facades\Socialite;

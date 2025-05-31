@@ -1830,6 +1830,9 @@
                 }
             },
             "autoload": {
+                "files": [
+                    "src/functions_include.php"
+                ],
                 "psr-4": {
                     "Fruitcake\\Cors\\": "src/"
                 }
@@ -3808,6 +3811,7 @@
             ],
             "authors": [
                 {
+
                     "name": "Andreas Braun",
                     "email": "andreas.braun@mongodb.com",
                     "role": "Leader"
@@ -4230,6 +4234,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
+
                     "dev-master": "4.0-dev"
                 }
             },
@@ -4435,6 +4440,7 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/openspout/openspout/zipball/df9b0f4d229c37c3caa5a9252a6ad8a94efb0fb5",
                 "reference": "df9b0f4d229c37c3caa5a9252a6ad8a94efb0fb5",
+
                 "shasum": ""
             },
             "require": {
@@ -4665,6 +4671,9 @@
                 }
             },
             "autoload": {
+                "files": [
+                    "src/functions.php"
+                ],
                 "psr-4": {
                     "PhpOption\\": "src/PhpOption/"
                 }
@@ -6674,6 +6683,75 @@
             "time": "2025-03-31T08:49:55+00:00"
         },
         {
+            "name": "symfony/html-sanitizer",
+            "version": "v7.2.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/html-sanitizer.git",
+                "reference": "1bd0c8fd5938d9af3f081a7c43d360ddefd494ca"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/html-sanitizer/zipball/1bd0c8fd5938d9af3f081a7c43d360ddefd494ca",
+                "reference": "1bd0c8fd5938d9af3f081a7c43d360ddefd494ca",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "league/uri": "^6.5|^7.0",
+                "masterminds/html5": "^2.7.2",
+                "php": ">=8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\HtmlSanitizer\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Titouan Galopin",
+                    "email": "galopintitouan@gmail.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Provides an object-oriented API to sanitize untrusted HTML input for safe insertion into a document's DOM.",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "Purifier",
+                "html",
+                "sanitizer"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/html-sanitizer/tree/v7.2.6"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2025-03-31T08:29:03+00:00"
+        },
+        {
             "name": "symfony/http-foundation",
             "version": "v7.3.0",
             "source": {
@@ -7029,6 +7107,7 @@
                 }
             ],
             "time": "2025-02-19T08:51:26+00:00"
+
         },
         {
             "name": "symfony/polyfill-ctype",
