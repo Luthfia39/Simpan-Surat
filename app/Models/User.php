@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Auth\Authenticatable;
 use MongoDB\Laravel\Eloquent\Model as Eloquent;
+
+// use Jenssegers\Mongodb\Auth\User as Authenticatable;
+// class User extends Authenticatable implements FilamentUser
+
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
@@ -50,7 +54,7 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -59,7 +63,7 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        if ($panel->getId() === 'user') {
+        if ($panel->getId() === 'user' && str_ends_with($this->email, '@mail.ugm.ac.id')) {
             return true;
         }
         return false;

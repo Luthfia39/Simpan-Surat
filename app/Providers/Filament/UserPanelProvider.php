@@ -25,6 +25,7 @@ use Laravel\Socialite\Contracts\User as SocialiteUserContract;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 use App\Filament\Pages\Auth\Login;
+use Illuminate\Support\Facades\Auth;
 
 class UserPanelProvider extends PanelProvider
 {
@@ -67,29 +68,80 @@ class UserPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->breadcrumbs(false)
-            ->plugin(
-                FilamentSocialitePlugin::make()
-                    // (required) Add providers corresponding with providers in `config/services.php`. 
-                    ->providers([
-                        // Create a provider 'gitlab' corresponding to the Socialite driver with the same name.
-                        Provider::make('google')
-                            ->label('Login dengan Google')
-                            ->icon('heroicon-o-user-circle')
-                            ->color(Color::Blue)
-                            ->outlined(false)
-                            ->stateless(false)
-                            ->scopes([
-                                'openid',
-                                'email',
-                                'profile',
-                            ])
-                            ->with(['...']),
-                    ])
-                    // (optional) Override the panel slug to be used in the oauth routes. Defaults to the panel ID.
-                    ->slug('user')
-                    // (optional) Change the associated model class.
-                    ->userModelClass(\App\Models\User::class)
-            );
+            ->breadcrumbs(false);
+            // ->plugin(
+            //     FilamentSocialitePlugin::make()
+            //         // (required) Add providers corresponding with providers in `config/services.php`. 
+            //         ->providers([
+            //             // Create a provider 'gitlab' corresponding to the Socialite driver with the same name.
+            //             Provider::make('google')
+            //                 ->label('Login dengan Google')
+            //                 ->icon('heroicon-o-user-circle')
+            //                 ->color(Color::Blue)
+            //                 ->outlined(false)
+            //                 ->stateless(false)
+            //                 ->scopes([
+            //                     'openid',
+            //                     'email',
+            //                     'profile',
+            //                 ])
+            //                 ->with(['...']),
+            //         ])
+            //         // (optional) Override the panel slug to be used in the oauth routes. Defaults to the panel ID.
+            //         // ->slug('user')
+            //         // (optional) Change the associated model class.
+            //         ->userModelClass(\App\Models\User::class)
+            //         ->createUserUsing(function (string $provider, SocialiteUserContract $oauthUser, FilamentSocialitePlugin $plugin) {
+
+            //             print('bisa');
+
+            //             dd(["user" => $oauthUser]);
+            //             // Logic to create a new user.
+            //             // $user = User::where('email', $oauthUser->getEmail())->first();
+
+            //             // \Log::info(['user' =>$user]);
+
+            //             // if (!$user) {
+
+            //             //     \Log::info(['nama' => $oauthUser->getName()]);
+
+            //             //     $userData = [
+            //             //         'name' => $oauthUser->getName(),
+            //             //         'email' => $oauthUser->getEmail(),
+            //             //         'password' => Hash::make(Str::uuid()), // Set password ke UUID acak yang di-hash
+            //             //         'email_verified_at' => now(),
+            //             //         'google_id' => $oauthUser->getId(),
+            //             //         'google_avatar' => $oauthUser->getAvatar(),
+            //             //         'is_admin' => false,
+            //             //         'nim' => null,
+            //             //         'prodi' => null,
+            //             //     ];
+
+            //             //     $user = User::create($userData);
+            //             // } else {
+            //             //     // ... logika update user jika diperlukan
+            //             // }
+
+            //             if (! $user) {
+            //                 $user = User::create([
+            //                     'name' => $oauthUser->getName(),
+            //                     'email' => $oauthUser->getEmail(),
+            //                     'password' => bcrypt(Str::uuid()),
+            //                     'email_verified_at' => now(),
+            //                     'google_id' => $oauthUser->getId(),
+            //                     'google_avatar' => $oauthUser->getAvatar(),
+            //                 ]);
+            //             }
+                    
+            //             // ✅ LOGIN langsung, jangan pakai SQL-based Auth
+            //             Auth::login($user);
+
+            //             return $user;
+            //         })
+            //         ->redirectAfterLoginUsing(function (string $provider, FilamentSocialiteUserContract $socialiteUser, FilamentSocialitePlugin $plugin) {
+            //             // Change the redirect behaviour here.
+            //             return Filament::getPanelUrl();
+            //         })
+            // );
     }
 };
