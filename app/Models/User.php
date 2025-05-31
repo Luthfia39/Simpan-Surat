@@ -63,10 +63,15 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        if ($panel->getId() === 'user' && str_ends_with($this->email, '@mail.ugm.ac.id')) {
-            return true;
+        if (str_ends_with($this->email, '@mail.ugm.ac.id')) {
+            if ($panel->getId() === 'admin') {
+                return $this->is_admin === true; // Hanya user dengan is_admin = true yang bisa akses panel admin
+            }
+        
+            if ($panel->getId() === 'user') {
+                return true; // Semua user yang terautentikasi bisa akses panel user
+            }
         }
         return false;
-        // return str_ends_with($this->email, '@mail.ugm.ac.id');
     }
 }
