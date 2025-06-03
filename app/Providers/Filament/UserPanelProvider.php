@@ -28,7 +28,7 @@ use App\Filament\Pages\Auth\Login;
 use Illuminate\Support\Facades\Auth;
 
 use Filament\Navigation\NavigationItem;
-use App\Filament\Pages\Profile;
+use App\Filament\User\Pages\Profile;
 
 class UserPanelProvider extends PanelProvider
 {
@@ -37,23 +37,23 @@ class UserPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('user')
-            ->path('user')
+            ->path('')
             // ->login()
             ->login(Login::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->sidebarCollapsibleOnDesktop()
-            ->brandName('SuratTEDI')
+            // ->brandName('SuratTEDI')
             ->darkMode(false)
             ->font('Plus Jakarta Sans')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverPages(in: app_path('Filament/User/Pages'), for: 'App\\Filament\\User\\Pages')
             ->pages([
                 Pages\Dashboard::class,
                 Profile::class
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->discoverWidgets(in: app_path('Filament/User/Widgets'), for: 'App\\Filament\\User\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
@@ -73,11 +73,5 @@ class UserPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->breadcrumbs(false);
-            // ->navigationItems([
-            //     NavigationItem::make('Profil')
-            //         ->url('/user/profile') 
-            //         ->icon('heroicon-o-user-circle')
-            //         ->sort(3),
-            // ]);
     }
 };

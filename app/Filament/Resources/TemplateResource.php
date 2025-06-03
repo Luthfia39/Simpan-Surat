@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 // using mongoDB
 use MongoDB\Laravel\Eloquent\Model;
 
+use App\Models\User;
+
 class TemplateResource extends Resource
 {
     protected static ?string $model = Template::class;
@@ -27,10 +29,6 @@ class TemplateResource extends Resource
     protected static ?int $navigationSort = 3;
 
     protected static bool $shouldRegisterNavigation = false;
-
-    // protected static ?string $navigationLabel = 'Buat Surat Keluar';
-
-    // protected static ?string $navigationGroup = 'Surat Keluar';
 
     public static function form(Form $form): Form
     {
@@ -62,6 +60,15 @@ class TemplateResource extends Resource
             ->recordUrl(
                 fn (Model $record): string => Pages\CreateSuratFromTemplate::getUrl([$record->id]),
             )
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+            
+                if (!$user->is_admin) {
+                    $query->forUser();
+                }
+            
+                return $query;
+            })
             ;
     }
 

@@ -68,7 +68,7 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
             }
         
             if ($panel->getId() === 'user') {
-                return true; // Semua user yang terautentikasi bisa akses panel user
+                return $this->is_admin === false; // Semua user yang terautentikasi bisa akses panel user
             }
         }
         return false;

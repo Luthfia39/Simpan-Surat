@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 use Laravel\Socialite\Facades\Socialite;
+use Filament\Facades\Filament;
 
 Route::get('/auth/google/redirect', function () {
     return Socialite::driver('google')->redirect();
@@ -40,10 +41,23 @@ Route::get('/user/oauth/callback/google', function () {
 
         Auth::login($user);
 
-        return redirect('/user'); // redirect ke panel Filament
+        // if ($user->is_admin && $user->email === 'luthfia.nisa2703@mail.ugm.ac.id') {
+        //     return redirect('/admin'); // Redirect ke path panel admin Anda
+        // } else {
+            // return redirect('/user');  // Redirect ke path panel user Anda
+        // }
+
+        // Tentukan redirect berdasarkan peran user
+        if ($user->is_admin) {
+            // Redirect ke dashboard panel admin
+            return redirect('/admin');
+        } else {
+            // Redirect ke dashboard panel user
+            return redirect('/');
+        }
     } catch (\Exception $e) {
         \Log::error('Google OAuth error: ' . $e->getMessage());
-        return redirect('/login')->withErrors('Login Google gagal, silakan coba lagi.');
+        return redirect('/user/login')->withErrors('Login Google gagal, silakan coba lagi.');
     }
     
 });

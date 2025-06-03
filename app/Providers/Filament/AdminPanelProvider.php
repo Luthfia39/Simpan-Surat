@@ -21,15 +21,16 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Filament\Widgets\SuratStatistic;
 use App\Filament\Widgets\SuratOverview;
 
+use App\Filament\Pages\Auth\Login;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
             ->colors([
                 'primary' => Color::Blue,
                 // 'secondary' => Color::Amber,

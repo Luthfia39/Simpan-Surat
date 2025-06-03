@@ -10,6 +10,11 @@ class ListSuratMasuks extends ListRecords
 {
     protected static string $resource = SuratMasukResource::class;
 
+    // public static function canAccess(): bool
+    // {
+    //     return Auth::user()->is_admin === true;
+    // }
+
     public function getHeading(): string
     {
         return "List Surat Masuk";
