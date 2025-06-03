@@ -9,6 +9,8 @@ use Filament\Forms\Components\TextInput;
 use App\Enums\Major;
 use Filament\Forms\Components\Select;
 
+use Illuminate\Support\Facades\Auth;
+
 class RekomendasiBeasiswa extends CreateTemplate
 {
     public static ?string $view = 'templates.rekomendasi-beasiswa';
@@ -21,7 +23,8 @@ class RekomendasiBeasiswa extends CreateTemplate
                     ->label('Nomor Surat')
                     ->minLength(1)
                     ->mask('999999999999999999')
-                    ->required(),
+                    ->required()
+                    ->hidden(!Auth::user()->is_admin),
                 TextInput::make('nama')
                     ->minLength(2)
                     ->required(),

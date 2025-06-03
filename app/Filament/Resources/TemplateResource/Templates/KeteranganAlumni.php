@@ -8,6 +8,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
+use Illuminate\Support\Facades\Auth;
+
 class KeteranganAlumni extends CreateTemplate
 {
     public static ?string $view = 'templates.keterangan-alumni';
@@ -20,7 +22,8 @@ class KeteranganAlumni extends CreateTemplate
                     ->label('Nomor Surat')
                     ->minLength(1)
                     ->mask('999999999999999999')
-                    ->required(),
+                    ->required()
+                    ->hidden(!Auth::user()->is_admin),
                 TextInput::make('nama')
                     ->minLength(2)
                     ->required(),

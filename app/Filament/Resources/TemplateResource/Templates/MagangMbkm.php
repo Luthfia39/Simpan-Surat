@@ -9,6 +9,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
+use Illuminate\Support\Facades\Auth;
+
 class MagangMbkm extends CreateTemplate
 {
     public static ?string $view = 'templates.magang-mbkm';
@@ -21,7 +23,8 @@ class MagangMbkm extends CreateTemplate
                     ->label('Nomor Surat')
                     ->minLength(1)
                     ->mask('999999999999999999')
-                    ->required(),
+                    ->required()
+                    ->hidden(!Auth::user()->is_admin),
                 TextInput::make('nama')
                     ->minLength(2)
                     ->required(),

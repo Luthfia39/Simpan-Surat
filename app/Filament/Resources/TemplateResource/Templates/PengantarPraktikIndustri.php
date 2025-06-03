@@ -12,6 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 
+use Illuminate\Support\Facades\Auth;
 
 class PengantarPraktikIndustri extends CreateTemplate
 {
@@ -30,7 +31,8 @@ class PengantarPraktikIndustri extends CreateTemplate
                     ->label('Nomor Surat')
                     ->minLength(1)
                     ->mask('999999999999999999')
-                    ->required(),
+                    ->required()
+                    ->hidden(!Auth::user()->is_admin),
                 Textarea::make('tujuan')
                     ->rows(4)
                     ->extraInputAttributes(['style' => 'resize:none'])

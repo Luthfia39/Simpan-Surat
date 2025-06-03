@@ -10,6 +10,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 
+use Illuminate\Support\Facades\Auth;
+
 class PraktikIndustri extends CreateTemplate
 {
     public static ?string $view = 'templates.praktik-industri';
@@ -22,7 +24,8 @@ class PraktikIndustri extends CreateTemplate
                     ->label('Nomor Surat')
                     ->minLength(1)
                     ->mask('999999999999999999')
-                    ->required(),
+                    ->required()
+                    ->hidden(!Auth::user()->is_admin),
                 TextInput::make('perusahaan')
                     ->minLength(2)
                     ->required(),
