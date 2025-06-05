@@ -10,6 +10,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Form\Components\FileUpload;
 use Filament\Forms\Components\DatePicker;
 
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +76,23 @@ class PengantarPraktikIndustri extends CreateTemplate
                     ->maxItems(10)
                     ->required(),
             ]),
+            Section::make([
+                FileUpload::make('proposal')
+                    ->label('Unggah File Proposal')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->required()
+                    ->hidden(Auth::user()->is_admin),
+                FileUpload::make('cv')
+                    ->label('Unggah File CV')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->required()
+                    ->hidden(Auth::user()->is_admin),
+                FileUpload::make('khs')
+                    ->label('Unggah File KHS (Kartu Hasil Studi) Sementara')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->required()
+                    ->hidden(Auth::user()->is_admin),
+            ])
         ];
     }
 }

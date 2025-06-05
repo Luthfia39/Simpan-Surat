@@ -23,7 +23,7 @@ class Pengajuan extends Model
     protected $casts = [
         'link_files' => 'array',
         'data_surat' => 'array',
-    ]
+    ];
 
     public function user(): BelongsTo
     {

@@ -27,6 +27,10 @@ class Profile extends Page implements HasForms
 
     protected static string $view = 'filament.pages.profile';
 
+    protected ?string $heading = 'Profil Pengguna';
+
+    protected static ?int $navigationSort = 2;
+
     #[Url(history: true)]
     public bool $isEditing = false;
 
@@ -45,9 +49,11 @@ class Profile extends Page implements HasForms
         return $form
             ->schema([
                 TextInput::make('name')
+                    ->label('Nama')
                     ->required()
                     ->disabled(! $this->isEditing),
                 TextInput::make('email')
+                    ->label('Email')
                     ->email()
                     ->required()
                     ->disabled(true), // Contoh: email tidak bisa diubah

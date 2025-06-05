@@ -1,6 +1,5 @@
 <x-filament-panels::page>
     <div>
-        <h2 class="text-xl font-semibold mb-4">Profil Pengguna</h2>
 
         <div class="space-y-4">
             {{ $this->form }}

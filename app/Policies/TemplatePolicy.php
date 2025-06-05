@@ -13,7 +13,7 @@ class TemplatePolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->is_admin;
     }
 
     /**
@@ -35,7 +35,7 @@ class TemplatePolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->is_admin;
     }
 
     /**
@@ -43,7 +43,7 @@ class TemplatePolicy
      */
     public function update(User $user, Template $template): bool
     {
-        return false;
+        return $user->is_admin;
     }
 
     /**

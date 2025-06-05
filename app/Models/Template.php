@@ -20,6 +20,14 @@ class Template extends Model
         'for_user',
         'name',
         'class_name',
+        'form_schema',
+        'required_files',
+    ];
+
+    protected $casts = [
+        'for_user' => 'boolean',
+        'form_schema' => 'array',
+        'required_files' => 'array',
     ];
 
     /**

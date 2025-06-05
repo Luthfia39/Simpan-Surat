@@ -12,24 +12,25 @@ class Prodi extends Model
     protected $connection = 'mongodb';
     protected $collection = 'prodis'; 
     protected $fillable = ['kode', 'nama'];
+
+     /**
+     * Get all of the users for the Prodi
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'prodi_id');
+    }
+
+    /**
+     * Get all of the suratKeluars for the Prodi
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function suratKeluars(): HasMany
+    {
+        return $this->hasMany(SuratKeluar::class, 'prodi_id');
+    }
 }
 
- /**
- * Get all of the users for the Prodi
- *
- * @return \Illuminate\Database\Eloquent\Relations\HasMany
- */
-public function users(): HasMany
-{
-    return $this->hasMany(User::class, 'prodi_id');
-}
-
-/**
- * Get all of the suratKeluars for the Prodi
- *
- * @return \Illuminate\Database\Eloquent\Relations\HasMany
- */
-public function suratKeluars(): HasMany
-{
-    return $this->hasMany(SuratKeluar::class, 'prodi_id');
-}

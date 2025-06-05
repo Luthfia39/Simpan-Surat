@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use App\Policies\SuratPolicy;
 use App\Policies\TemplatePolicy;
 use App\Policies\SuratKeluarPolicy;
+use App\Policies\PengajuanPolicy;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
@@ -32,5 +33,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-surat-masuk', [SuratPolicy::class, 'view']);
         Gate::define('view-template', [TemplatePolicy::class, 'view']);
         Gate::define('view-surat-keluar', [SuratKeluarPolicy::class, 'view']);
+        Gate::define('view-pengajuan', [PengajuanPolicy::class, 'view']);
+        Gate::define('create-pengajuan', [PengajuanPolicy::class, 'create']);
+        Gate::define('edit-pengajuan', [PengajuanPolicy::class, 'update']);
     }
 }
