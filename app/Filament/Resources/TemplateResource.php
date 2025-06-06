@@ -15,6 +15,7 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Support\Enums\FontWeight;
 // using mongoDB
 use MongoDB\Laravel\Eloquent\Model;
 
@@ -30,10 +31,6 @@ class TemplateResource extends Resource
 
     protected static ?string $pluralLabel = 'Templates Surat';
 
-    // protected static ?int $navigationSort = 3;
-
-    // protected static bool $shouldRegisterNavigation = false;
-
     public static function form(Form $form): Form
     {
         return $form
@@ -48,7 +45,7 @@ class TemplateResource extends Resource
                             ->unique(ignoreRecord: true), // Pastikan nama template unik
                         Forms\Components\TextInput::make('class_name')
                             ->label('Nama Blade View (misal: magang)')
-                            ->helperText('Akan merujuk ke resources/views/templates/{classname}.blade.php untuk rendering PDF/UI.')
+                            ->helperText('Akan merujuk ke resources/views/templates/{class_name}.blade.php untuk rendering PDF/UI.')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true), // Pastikan classname unik
@@ -130,42 +127,65 @@ class TemplateResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Template')
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('class_name')
-                    ->label('Nama Blade View')
-                    ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight(FontWeight::Medium)
+                    ->color('primary')
+                    ->description(fn (Template $record): string => $record->class_name)
+                    ->tooltip(fn (Template $record): string => 'View: ' . $record->class_name),
+
                 Tables\Columns\IconColumn::make('for_user')
-                    ->label('Untuk Pengguna')
-                    ->boolean() // Menampilkan ikon centang/silang
+                    ->label('Tersedia untuk Pengguna')
+                    ->boolean()
+                    ->trueIcon('heroicon-s-check-circle')
+                    ->falseIcon('heroicon-s-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->tooltip(fn (bool $state): string => $state ? 'Tersedia untuk pengguna' : 'Tidak tersedia untuk pengguna')
                     ->sortable(),
+
+                // Kolom untuk Field Data (lebih ekspresif)
                 Stack::make([
-                    Tables\Columns\TextColumn::make('form_schema')
+                    Tables\Columns\TextColumn::make('input_data_label') // <-- Kolom baru sebagai label dalam Stack
+                        ->label('Input Data Form') // Ini akan jadi header kolom untuk tampilan Filament
+                        ->getStateUsing(fn (): string => 'Input Data Form')
+                        ->weight(FontWeight::SemiBold) // Lebih tebal
+                        ->color('gray') // Warna netral
+                        ->alignCenter(), // Pusatkan teks label
+                    Tables\Columns\TextColumn::make('form_schema_count')
                         ->label('Jumlah Field Data')
                         ->getStateUsing(fn (Template $record): string => count($record->form_schema) . ' field(s)')
-                        ->badge() // Menampilkan sebagai badge
-                        ->color('info'),
+                        ->badge()
+                        ->color(fn (Template $record): string => count($record->form_schema) > 0 ? 'info' : 'gray')
+                        ->tooltip(fn (Template $record): string => count($record->form_schema) . ' field input data'),
                     Tables\Columns\TextColumn::make('form_schema_preview')
                         ->label('Preview Field Data')
                         ->getStateUsing(function (Template $record): string {
                             if (empty($record->form_schema)) {
                                 return 'Tidak ada field data.';
                             }
-                            // Ambil 3 label pertama dan gabungkan
                             $labels = array_map(fn($item) => $item['label'], array_slice($record->form_schema, 0, 3));
                             return implode(', ', $labels) . (count($record->form_schema) > 3 ? '...' : '');
                         })
-                        ->wrap() // Membungkus teks jika terlalu panjang
-                        ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall) // Ukuran teks lebih kecil
-                        ->color('secondary'),
-                ]), // Label untuk kolom Stack ini
+                        ->wrap()
+                        ->size(TextColumn\TextColumnSize::ExtraSmall)
+                        ->color('secondary')
+                        ->html(),
+                ])->space(1), // Removed .label() from Stack directly
 
+                // Kolom untuk Berkas Dibutuhkan (lebih ekspresif)
                 Stack::make([
-                    Tables\Columns\TextColumn::make('required_files')
+                    Tables\Columns\TextColumn::make('berkas_pendukung_label') // <-- Kolom baru sebagai label dalam Stack
+                        ->label('Berkas Pendukung') // Ini akan jadi header kolom untuk tampilan Filament
+                        ->getStateUsing(fn (): string => 'Berkas Pendukung')
+                        ->weight(FontWeight::SemiBold)
+                        ->color('gray')
+                        ->alignCenter(),
+                    Tables\Columns\TextColumn::make('required_files_count')
                         ->label('Jumlah Berkas')
                         ->getStateUsing(fn (Template $record): string => count($record->required_files) . ' berkas')
                         ->badge()
-                        ->color('warning'),
+                        ->color(fn (Template $record): string => count($record->required_files) > 0 ? 'warning' : 'gray')
+                        ->tooltip(fn (Template $record): string => count($record->required_files) . ' berkas yang dibutuhkan'),
                     Tables\Columns\TextColumn::make('required_files_preview')
                         ->label('Preview Berkas')
                         ->getStateUsing(function (Template $record): string {
@@ -176,20 +196,18 @@ class TemplateResource extends Resource
                             return implode(', ', $labels) . (count($record->required_files) > 3 ? '...' : '');
                         })
                         ->wrap()
-                        ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall)
-                        ->color('secondary'),
-                ]), // Label untuk kolom Stack ini
+                        ->size(TextColumn\TextColumnSize::ExtraSmall)
+                        ->color('secondary')
+                        ->html(),
+                ])->space(1), // Removed .label() from Stack directly
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')
-                    ->dateTime('d M Y H:i:s')
+                    ->dateTime('d M Y H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), // Bisa disembunyikan secara default
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Diubah Pada')
-                    ->dateTime('d M Y H:i:s')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->color('info')
+                    ->tooltip(fn (Template $record): string => 'Dibuat: ' . $record->created_at?->format('d M Y H:i:s')),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('for_user')
@@ -197,18 +215,22 @@ class TemplateResource extends Resource
                     ->trueLabel('Ya')
                     ->falseLabel('Tidak')
                     // ->nullableLabel('Semua')
-                    ,
+                    ->indicator('Status Pengguna'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ViewAction::make()->icon('heroicon-s-eye')->color('secondary'),
+                Tables\Actions\EditAction::make()->icon('heroicon-s-pencil-square')->color('primary'),
+                Tables\Actions\DeleteAction::make()->icon('heroicon-s-trash')->color('danger'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                ])
+                ->label('Aksi Massal Template')
+                ->icon('heroicon-m-rectangle-stack')
+                ->color('gray'),
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

@@ -6,6 +6,8 @@ use App\Filament\Resources\PengajuanResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
+use Illuminate\Support\Facades\Auth;
+
 class ListPengajuans extends ListRecords
 {
     protected static string $resource = PengajuanResource::class;
@@ -18,7 +20,8 @@ class ListPengajuans extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Buat Pengajuan Baru'),
+                ->label('Buat Pengajuan Baru')
+                ->hidden(Auth::user()->is_admin),
         ];
     }
 }
