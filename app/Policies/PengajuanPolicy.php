@@ -34,7 +34,7 @@ class PengajuanPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return !$user->is_admin;
     }
 
     /**
@@ -42,7 +42,7 @@ class PengajuanPolicy
      */
     public function update(User $user, Pengajuan $pengajuan): bool
     {
-        return $user->isAdmin();
+        return $user->is_admin;
     }
 
     /**

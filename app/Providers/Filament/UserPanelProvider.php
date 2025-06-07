@@ -27,6 +27,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use App\Filament\Pages\Auth\Login;
 use Illuminate\Support\Facades\Auth;
 
+use App\Model\Pengajuan;
 use Filament\Navigation\NavigationItem;
 use App\Filament\User\Pages\Profile;
 

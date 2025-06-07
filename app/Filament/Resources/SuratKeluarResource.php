@@ -48,25 +48,25 @@ class SuratKeluarResource extends Resource
                     ->rowIndex()
                     ->alignCenter(),
 
-                TextColumn::make('major')
-                    ->label('Program Studi')
+                TextColumn::make('nomor_surat')
+                    ->label('Nomor Surat')
                     // ->getStateUsing(fn (Model $record): ?string => 
                     //     $record->pdf_url ?? null
                     // )
-                    ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'TRPL' => 'warning',
-                        'TRI' => 'info',
-                        'TRE' => 'success',
-                        'TRIK' => 'danger',
-                        default => 'gray',
-                    })
+                    // ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
+                    // ->badge()
+                    // ->color(fn (string $state): string => match ($state) {
+                    //     'TRPL' => 'warning',
+                    //     'TRI' => 'info',
+                    //     'TRE' => 'success',
+                    //     'TRIK' => 'danger',
+                    //     default => 'gray',
+                    // })
                     ->sortable()
                     ->searchable(),
             ])
             ->filters([
-                SelectFilter::make('major')
+                SelectFilter::make('prodi')
                     ->label('Program Studi')
                     ->options([
                         'TRPL' => 'Teknologi Rekayasa Perangkat Lunak',

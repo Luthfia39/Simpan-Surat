@@ -42,18 +42,18 @@ class TemplateResource extends Resource
                             ->label('Nama Template')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true), // Pastikan nama template unik
+                            ->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('class_name')
                             ->label('Nama Blade View (misal: magang)')
-                            ->helperText('Akan merujuk ke resources/views/templates/{class_name}.blade.php untuk rendering PDF/UI.')
+                            ->helperText('Akan merujuk ke resources/views/templates/{classname}.blade.php untuk rendering PDF/UI.')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true), // Pastikan classname unik
+                            ->unique(ignoreRecord: true),
                         Forms\Components\Toggle::make('for_user')
                             ->label('Tersedia untuk Pengguna Umum')
                             ->helperText('Jika aktif, template ini akan muncul di daftar pilihan pengguna.')
                             ->default(true),
-                    ])->columns(2), // Tampilkan dalam 2 kolom
+                    ])->columns(2),
 
                 Forms\Components\Section::make('Definisi Input Data Spesifik Surat')
                     ->description('Tentukan field-field input yang dibutuhkan pengguna untuk mengisi data surat ini.')
@@ -66,7 +66,7 @@ class TemplateResource extends Resource
                                     ->label('Nama Field (kunci)')
                                     ->helperText('Gunakan snake_case (misal: nama_lengkap, tgl_mulai). Harus unik.')
                                     ->required()
-                                    ->unique(ignoreRecord: true, table: Template::class, column: 'form_schema.*.name'), // Unique dalam array form_schema
+                                    ->unique(ignoreRecord: true, table: Template::class, column: 'form_schema.*.name'),
                                 Forms\Components\TextInput::make('label')
                                     ->label('Label Tampilan')
                                     ->required(),
@@ -79,21 +79,46 @@ class TemplateResource extends Resource
                                         'date' => 'Tanggal',
                                         'email' => 'Email',
                                         'url' => 'URL',
-                                        'select' => 'Dropdown (Pilihan)'
-                                        // Tambahkan tipe lain sesuai kebutuhan Anda
+                                        'select' => 'Dropdown (Pilihan)',
                                     ])
-                                    ->required(),
+                                    ->required()
+                                    ->live(),
+
+                                // Tambahkan helper text input di sini
+                                Forms\Components\TextInput::make('helper_text')
+                                    ->label('Teks Bantuan (Opsional)')
+                                    ->helperText('Akan muncul di bawah input field.')
+                                    ->nullable()
+                                    ->visible(fn (Forms\Get $get) => in_array($get('type'), ['text', 'textarea', 'number', 'date', 'email', 'url', 'select'])), // Tampilkan untuk tipe input tertentu
+
                                 Forms\Components\TextInput::make('default')
                                     ->label('Nilai Default (Opsional)')
                                     ->nullable(),
                                 Forms\Components\Toggle::make('required')
                                     ->label('Wajib Diisi')
                                     ->default(false),
+
+                                // Field untuk Opsi Dropdown (Hanya Tampil Jika Tipe = 'select')
+                                Forms\Components\Repeater::make('options')
+                                    ->label('Opsi Dropdown')
+                                    ->helperText('Definisikan nilai (value) dan label tampilan untuk setiap opsi dropdown.')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('value')
+                                            ->label('Nilai Opsi')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('label')
+                                            ->label('Label Tampilan Opsi')
+                                            ->required(),
+                                    ])
+                                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                                    ->default([])
+                                    ->columnSpanFull()
+                                    ->visible(fn (Forms\Get $get) => $get('type') === 'select'),
                             ])
-                            ->columnSpanFull() // Mengambil lebar penuh dalam section
-                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null) // Label untuk setiap item di repeater
-                            ->grid(2) // Tampilkan item repeater dalam 2 kolom
-                            ->default([]), // Default ke array kosong
+                            ->columnSpanFull()
+                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                            ->grid(2)
+                            ->default([]),
                     ]),
 
                 Forms\Components\Section::make('Definisi Berkas yang Dibutuhkan')
@@ -107,7 +132,7 @@ class TemplateResource extends Resource
                                     ->label('Nama Field Berkas (kunci)')
                                     ->helperText('Gunakan snake_case (misal: file_cv, file_transkrip). Harus unik.')
                                     ->required()
-                                    ->unique(ignoreRecord: true, table: Template::class, column: 'required_files.*.name'), // Unique dalam array required_files
+                                    ->unique(ignoreRecord: true, table: Template::class, column: 'required_files.*.name'),
                                 Forms\Components\TextInput::make('label')
                                     ->label('Label Berkas')
                                     ->required(),
