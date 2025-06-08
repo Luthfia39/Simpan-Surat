@@ -66,6 +66,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->collapsibleNavigationGroups(true)
-            ->breadcrumbs(false);
+            ->breadcrumbs(false)
+            ->viteTheme('resources/css/filament/admin/theme.css');;
     }
 }

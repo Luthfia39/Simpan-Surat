@@ -42,7 +42,7 @@ class UserPanelProvider extends PanelProvider
             // ->login()
             ->login(Login::class)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#5a5aa3',
             ])
             ->sidebarCollapsibleOnDesktop()
             // ->brandName('SuratTEDI')
@@ -73,6 +73,7 @@ class UserPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->breadcrumbs(false);
+            ->breadcrumbs(false)
+            ->viteTheme('resources/css/filament/user/theme.css');
     }
 };

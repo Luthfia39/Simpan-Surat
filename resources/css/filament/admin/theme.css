@@ -1,0 +1,51 @@
+/* resources/css/filament/admin/theme.css */
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@config 'tailwind.config.js';
+
+.fi-sidebar, .fi-sidebar-header{
+    background-color: #2C3E50 !important;
+}
+
+.fi-sidebar .fi-sidebar-item {
+    background-color: #2C3E50 !important;
+    color: white !important; 
+}
+
+.fi-sidebar .fi-sidebar-item .fi-sidebar-item-icon,
+.fi-sidebar .fi-sidebar-item .fi-sidebar-item-label, .fi-logo, .fi-icon-btn {
+    color: #F3F4F6 !important; 
+}
+
+.fi-sidebar .fi-sidebar-item:hover .fi-sidebar-item-button {
+    background-color: #34495E !important; 
+    color: #F9FAFB !important; 
+}
+
+.fi-sidebar .fi-sidebar-item:hover .fi-sidebar-item-icon,
+.fi-sidebar .fi-sidebar-item:hover .fi-sidebar-item-label {
+    color: #F9FAFB !important; 
+}
+
+.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-button {
+    background-color: #34495E !important; 
+    color: #F9FAFB !important; 
+}
+
+.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-icon,
+.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-label {
+    color: #F9FAFB !important; 
+}
+
+.fi-sidebar .fi-badge {
+    color: white !important;
+}
+
+.fi-sidebar .fi-badge.fi-color-danger {
+    background-color: #EF4444 !important; 
+    color: white !important;
+}
+.fi-sidebar .fi-badge.fi-color-success {
+    background-color: #10B981 !important; 
+    color: white !important;
+}
