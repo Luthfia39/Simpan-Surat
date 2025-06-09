@@ -13,7 +13,7 @@ class SuratPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_admin === true;
+        return $user->is_admin;
     }
 
     /**
@@ -21,7 +21,7 @@ class SuratPolicy
      */
     public function view(User $user, Surat $surat): bool
     {
-        return $user->is_admin === true;
+        return $user->is_admin;
     }
 
     /**
@@ -29,7 +29,7 @@ class SuratPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->is_admin;
     }
 
     /**
@@ -37,7 +37,7 @@ class SuratPolicy
      */
     public function update(User $user, Surat $surat): bool
     {
-        return false;
+        return $user->is_admin;
     }
 
     /**

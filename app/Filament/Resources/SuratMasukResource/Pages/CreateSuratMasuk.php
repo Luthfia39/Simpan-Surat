@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Poll;
 use Filament\Resources\Pages\CreateRecord;
 
+use App\Filament\Pages\ReviewOCR;
+
 class CreateSuratMasuk extends CreateRecord
 {
     protected static string $resource = SuratMasukResource::class;
@@ -31,11 +33,6 @@ class CreateSuratMasuk extends CreateRecord
     public string $taskId = '';
 
     public bool $shouldPoll = false;
-
-    public static function shouldRegisterInNavigation(): bool
-    {
-        return true; 
-    }
 
     public function getHeading(): string
     {
@@ -78,7 +75,7 @@ class CreateSuratMasuk extends CreateRecord
             $pdfUrl = asset('storage/' . $filePath);
 
             $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://10.33.73.36:3000/submit_pdf');
+                ->post('http://192.168.1.27:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {
@@ -131,7 +128,7 @@ class CreateSuratMasuk extends CreateRecord
 
             // Redirect langsung menggunakan Livewire
             $this->redirect(
-                route('filament.admin.resources.surat-masuks.edit', ['record' => $surat->task_id])
+                ReviewOCR::getUrl(['taskId' => $this->taskId])
             );
         }
     }

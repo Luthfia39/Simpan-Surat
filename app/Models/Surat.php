@@ -16,6 +16,7 @@ class Surat extends Model
         'task_id',
         'ocr_text',
         'letter_type',
+        'document_index',
         'extracted_fields',
         'pdf_url',
     ];
