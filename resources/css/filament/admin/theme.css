@@ -12,6 +12,10 @@
     color: white !important; 
 }
 
+.fi-icon-btn-icon {
+    color: #2C3E50 !important;
+}
+
 .fi-sidebar .fi-sidebar-item .fi-sidebar-item-icon,
 .fi-sidebar .fi-sidebar-item .fi-sidebar-item-label, .fi-logo, .fi-icon-btn {
     color: #F3F4F6 !important; 
