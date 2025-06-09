@@ -1,100 +1,16 @@
 <x-filament-panels::page>
     <x-filament::section>
         <x-slot name="heading">
-            {{ $this->heading }}
+            {{ $this->getHeading() }}
         </x-slot>
 
         <x-slot name="description">
-            Cek kembali hasil OCR berikut ini, pastikan data yang disimpan telah sesuai.
+            {{ $this->getSubheading() }}
         </x-slot>
-
+    
         <div>
-            {{-- Overview of All Documents Found (unchanged) --}}
-            <h2 class="text-xl font-bold mb-4">Dokumen Ditemukan (Total: {{ $foundLetters->count() }}):</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                @foreach($foundLetters as $doc)
-                    <div class="border p-4 rounded-lg shadow-sm bg-white">
-                        <p class="font-semibold text-lg">Dokumen #{{ $doc->document_index }}</p>
-                        <p class="text-sm text-gray-600">Jenis: {{ $doc->letter_type ?? 'Tidak Diketahui' }}</p>
-                        <p class="text-sm text-gray-600">ID Database: {{ $doc->id }}</p>
-                        @if ($doc->document_index === $selectedDocumentIndexForViewer)
-                            <span class="text-xs text-blue-500 font-semibold"> (Sedang di Viewer)</span>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-
-            <hr class="my-6">
-
-            <h3 class="text-lg font-semibold mb-2">Pilih Dokumen untuk Pratinjau OCR & Edit Form:</h3>
-            <x-filament::input.wrapper class="mb-4">
-                <x-filament::input.select
-                    wire:model.live="selectedDocumentIndexForViewer"
-                    x-on:change="
-                        $wire.loadDocumentForViewer($event.target.value)
-                    "
-                >
-                    <option value="">-- Pilih Dokumen --</option>
-                    @foreach ($foundLetters as $letter)
-                        <option value="{{ $letter->document_index }}">
-                            Dokumen {{ $letter->document_index }} ({{ $letter->letter_type ?? 'Tidak Diketahui' }})
-                        </option>
-                    @endforeach
-                </x-filament::input.select>
-            </x-filament::input.wrapper>
-
-            {{-- Display the single editable form, bound to the currently selected document --}}
-            <h3 class="text-lg font-semibold mb-2">Formulir Edit untuk Dokumen yang Dipilih:</h3>
-            @php
-                $selectedDocument = $foundLetters->firstWhere('document_index', $selectedDocumentIndexForViewer);
-            @endphp
-
-            @if ($selectedDocument)
-                <x-filament::section class="mb-6">
-                    <x-slot name="heading">
-                        Edit Dokumen #{{ $selectedDocument->document_index }}
-                        <span class="text-sm text-gray-500 ml-2">({{ $selectedDocument->letter_type ?? 'Tidak Diketahui' }})</span>
-                    </x-slot>
-
-                    <x-filament-panels::form
-                        wire:submit.prevent="saveAllDocuments"
-                        wire:model="documentsData.{{ $selectedDocument->document_index }}"
-                    >
-                        @foreach ($this->form as $component)
-                            {{ $component }}
-                        @endforeach
-                    </x-filament-panels::form>
-
-                    {{-- Display extracted fields below the form (read-only) --}}
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @php
-                            $extractedFields = is_string($selectedDocument->extracted_fields) ? json_decode($selectedDocument->extracted_fields, true) : ($selectedDocument->extracted_fields ?? []);
-                        @endphp
-                        @if(!empty($extractedFields))
-                            <h3 class="text-md font-semibold col-span-full">Bidang yang Terdeteksi Otomatis:</h3>
-                            @foreach($extractedFields as $key => $values)
-                                <x-filament::input.wrapper>
-                                    <x-slot name="label">{{ Str::headline($key) }}</x-slot>
-                                    <x-filament::input
-                                        type="text"
-                                        value="{{ implode(', ', (array) $values) }}"
-                                        disabled
-                                        class="bg-gray-50 text-gray-700"
-                                    />
-                                </x-filament::input.wrapper>
-                            @endforeach
-                        @else
-                            <p class="col-span-full text-gray-500">Tidak ada bidang terdeteksi secara otomatis.</p>
-                        @endif
-                    </div>
-                </x-filament::section>
-            @else
-                <x-filament::card class="text-center text-gray-500">
-                    <p>Pilih dokumen dari dropdown di atas untuk melihat detail dan mengeditnya.</p>
-                </x-filament::card>
-            @endif
-
-
+            {{ $this->wizardForm }}
+    
             <h3 class="text-lg font-semibold mb-2 mt-6">Pratinjau Teks OCR & Anotasi:</h3>
             <div
                 x-data="{
@@ -102,6 +18,7 @@
                     annotations: @entangle('annotations'),
                     currentDocumentIndexInViewer: @entangle('selectedDocumentIndexForViewer'),
                     dispatchUpdate: function(finalOcr, finalAnnotations) {
+                        console.log('Dispatching update for document index:', this.currentDocumentIndexInViewer);
                         $wire.updateDocumentOcrAndAnnotations(
                             this.currentDocumentIndexInViewer,
                             finalOcr,
@@ -109,21 +26,38 @@
                         );
                     },
                     init() {
-                        // Watch for changes to the 'ocr' property.
-                        // This ensures renderHighlights is called whenever new OCR text is loaded.
+                        console.log('--- Alpine x-data scope initialized! ---');
+                        console.log('--- Alpine init() method running! ---');
+    
+                        // Panggil renderHighlights setiap kali OCR atau annotations berubah
                         this.$watch('ocr', (newOcr) => {
                             if (newOcr) {
-                                // Ensure DOM is updated by Alpine before running highlight logic
+                                console.log('OCR property changed in Alpine! Re-rendering highlights.');
                                 this.$nextTick(() => {
                                     renderHighlights();
                                 });
                             }
                         });
-
+    
+                        this.$watch('annotations', (newAnnotations) => {
+                            console.log('Annotations property changed in Alpine! Re-rendering highlights.');
+                            this.$nextTick(() => {
+                                renderHighlights();
+                            });
+                        }, { deep: true }); // Watch deeply for changes within the object
+    
                         this.$wire.on('ocr-loaded', ({ ocr, extracted_fields }) => {
-                            this.annotations = extracted_fields; 
-                            console.log('Livewire ocr-loaded event received.');
+                            console.log('Livewire ocr-loaded event received for viewer. Updating OCR and annotations.');
+                            this.annotations = extracted_fields; // Update annotations
                         });
+    
+                        // Panggil saat inisialisasi awal jika OCR sudah ada
+                        if (this.ocr) {
+                            console.log('Initial OCR present. Rendering highlights.');
+                            this.$nextTick(() => {
+                                renderHighlights();
+                            });
+                        }
                     }
                 }"
                 class="border border-gray-300 p-4 rounded-lg bg-white overflow-auto max-h-96"
@@ -132,11 +66,11 @@
                     id="ocr-content"
                     contenteditable="true"
                     class="p-4 min-h-[200px] border rounded bg-gray-50 mb-6 whitespace-pre-wrap"
-                    x-html="ocr" {{-- Alpine's x-html handles the content --}}
+                    x-html="ocr"
                 ></div>
-
+    
                 <input type="hidden" id="annotations-input" x-model="annotations" />
-
+    
                 <template id="annotation-modal">
                     <div class="modal-overlay fixed z-50 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">
                         <div class="bg-white rounded-lg shadow-xl p-6 w-80 text-center">
@@ -147,6 +81,14 @@
                                 <option value="isi_surat">Isi Surat</option>
                                 <option value="penanda_tangan">Penanda Tangan</option>
                                 <option value="tanggal">Tanggal</option>
+                                <option value="nama_ortu">Nama Orang Tua</option>
+                                <option value="pekerjaan">Pekerjaan</option>
+                                <option value="nip">NIP</option>
+                                <option value="pangkat">Pangkat/Gol</option>
+                                <option value="instansi">Instansi</option>
+                                <option value="thn_akademik">Tahun Akademik</option>
+                                <option value="keterangan_surat">Keterangan Surat</option>
+                                <option value="jenis_surat">Jenis Surat</option>
                             </select>
                             <button onclick="saveAnnotation()"
                                     class="px-4 py-2 border-black text-black rounded hover:bg-blue-700">
@@ -156,83 +98,108 @@
                     </div>
                 </template>
             </div>
-
-            <div class="mt-6 flex justify-end">
-                <x-filament-panels::form.actions :actions="$this->getFormActions()" />
-            </div>
         </div>
     </x-filament::section>
-
+    
     @push('scripts')
         <script>
-            let currentSelection = null;
-            let typeColors = {
-                nomor_surat: "#ffeb3b",     // kuning
-                isi_surat: "#4caf50",       // hijau
-                penanda_tangan: "#2196f3",  // biru
-                tanggal: "#f57c00"          // oranye
+            console.log('--- Script loaded! ---');
+            let currentSelection = null; // Menyimpan seleksi teks saat ini
+    
+            const typeColors = {
+                nomor_surat: "#ffeb3b",
+                isi_surat: "#4caf50",
+                penanda_tangan: "#2196f3",
+                tanggal: "#f57c00",
+                nama_ortu: "#9c27b0",
+                pekerjaan: "#795548",
+                nip: "#607d8b",
+                pangkat: "#009688",
+                instansi: "#8bc34a",
+                thn_akademik: "#ff9800",
+                keterangan_surat: "#e91e63",
+                jenis_surat: "#00bcd4"
             };
-
-            // renderHighlights now relies on global Alpine data
-            function renderHighlights() {
-                const container = document.getElementById("ocr-content");
-                // Clear existing highlights (marks)
-                container.querySelectorAll("mark").forEach(mark => {
-                    const textNode = document.createTextNode(mark.textContent);
-                    mark.parentNode.replaceChild(textNode, mark);
-                });
-
-                // Get the current OCR text (plain) and annotations from Alpine data
-                // This assumes `renderHighlights` is called within an Alpine scope or can access it.
-                // We'll get it from the `ocr-content` div's closest x-data context.
-                const alpineDataScope = Alpine.$data(container.closest('[x-data]'));
-                const ocr_text_plain = alpineDataScope.ocr;
-                const annotations = alpineDataScope.annotations || [];
-
-                // Re-render the plain OCR text first (x-html should have done this, but a safeguard)
-                container.innerHTML = ocr_text_plain;
-
-                // Re-initialize textNodes *after* innerHTML has been set
-                initTextNodes();
-
-                // Loop through annotations and apply highlights
-                annotations.forEach(annotation => {
-                    const key = Object.keys(annotation)[0];
-                    const value = annotation[key];
-
-                    if (!value || typeof value !== 'string') return;
-
-                    const matches = findMatches(value, ocr_text_plain);
-
-                    matches.forEach(match => {
-                        wrapTextByPosition(
-                            container,
-                            value,
-                            match.start,
-                            match.length,
-                            key
-                        );
-                    });
-                });
-                console.log('Highlights re-rendered.');
+    
+            let textNodes = []; // Peta node teks dan offset globalnya di plainTextContent
+            let plainTextContent = ''; // Konten teks OCR tanpa highlight
+            let ocrContentDiv = null; // Referensi global ke div konten OCR
+    
+            // Fungsi utilitas untuk meng-escape karakter regex
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             }
-
-            let textNodes = [];
-            function initTextNodes() {
-                const container = document.getElementById("ocr-content");
+    
+            // Fungsi untuk mendapatkan posisi awal dan panjang seleksi secara global
+            function getSelectionGlobalOffsets(selection, container, cleanPlainText) {
+                if (!selection || selection.rangeCount === 0 || !container || !cleanPlainText) return null;
+    
+                const range = selection.getRangeAt(0);
+    
+                // Buat range dari awal container hingga awal seleksi
+                const preSelectionRange = range.cloneRange();
+                preSelectionRange.selectNodeContents(container);
+                preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    
+                // Dapatkan teks sebelum seleksi, lalu hitung panjangnya
+                const tempDivForPreText = document.createElement('div');
+                tempDivForPreText.appendChild(preSelectionRange.cloneContents());
+                const preText = tempDivForPreText.textContent || tempDivForPreText.innerText;
+    
+                const globalStart = preText.length;
+                const selectedText = range.toString();
+                const globalLength = selectedText.length;
+    
+                // Verifikasi: Cek apakah teks yang dipilih benar-benar ada di posisi global ini
+                const expectedText = cleanPlainText.substring(globalStart, globalStart + globalLength);
+                if (expectedText === selectedText) {
+                    return { start: globalStart, length: globalLength };
+                } else {
+                    console.warn(`[getSelectionGlobalOffsets] Verification failed: Expected "${expectedText}", got "${selectedText}". Attempting fallback.`);
+                    const fallbackStart = cleanPlainText.indexOf(selectedText);
+                    if (fallbackStart !== -1) {
+                         console.warn(`[getSelectionGlobalOffsets] Fallback successful. Found at ${fallbackStart}.`);
+                         return { start: fallbackStart, length: selectedText.length };
+                    }
+                    console.error("[getSelectionGlobalOffsets] Fallback failed: Selected text not found in plainTextContent.");
+                    return null;
+                }
+            }
+    
+    
+            // Inisialisasi/inisialisasi ulang textNodes dan plainTextContent
+            // Fungsi ini HARUS selalu dipanggil sebelum membaca posisi teks
+            // atau sebelum menerapkan highlight, karena ia membersihkan DOM.
+            function initTextNodes(initialOcrHtml = null) {
+                if (!ocrContentDiv) {
+                    console.error("[initTextNodes] ocrContentDiv is not set.");
+                    return;
+                }
+    
+                // Langkah 1: Reset DOM ocrContentDiv ke konten OCR MURNI
+                // Ini CRITICAL: Memastikan DOM sama persis dengan plainTextContent yang baru dihitung
+                // dan semua <mark> tags dari sesi sebelumnya dihapus.
+                if (initialOcrHtml) {
+                    ocrContentDiv.innerHTML = initialOcrHtml;
+                } else {
+                    // Jika tidak ada initialOcrHtml, ambil dari x-data.ocr
+                    const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
+                    ocrContentDiv.innerHTML = alpineDataScope.ocr;
+                }
+    
+                // Langkah 2: Hitung plainTextContent dari DOM yang sudah bersih
+                plainTextContent = ocrContentDiv.textContent || ocrContentDiv.innerText || "";
+    
+                // Langkah 3: Bangun ulang peta node teks dari DOM aktual (setelah bersih)
                 textNodes = [];
                 let accumulatedLength = 0;
-
-                // Filter out <mark> tags when building textNodes for accurate positioning
+    
                 const walker = document.createTreeWalker(
-                    container,
+                    ocrContentDiv,
                     NodeFilter.SHOW_TEXT,
-                    { acceptNode: (node) => {
-                        // Accept text nodes that are not inside a <mark> tag
-                        return node.parentNode && node.parentNode.nodeName !== 'MARK' ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-                    }}
+                    null // Terima semua node teks di DOM yang bersih
                 );
-
+    
                 while (walker.nextNode()) {
                     const node = walker.currentNode;
                     textNodes.push({
@@ -241,20 +208,22 @@
                     });
                     accumulatedLength += node.nodeValue.length;
                 }
-                console.log('Text nodes initialized.');
+                console.log('[initTextNodes] Completed. plainTextContent length:', plainTextContent.length, 'textNodes count:', textNodes.length);
             }
-
-            function escapeRegExp(string) {
-                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            }
-
-            function findMatches(textToFind, fullOcrText) {
+    
+            // Fungsi untuk menemukan semua kecocokan teks (digunakan oleh renderHighlights)
+            function findMatches(textToFind) {
+                if (!plainTextContent || !textToFind) {
+                    // console.warn("plainTextContent or textToFind is empty. Cannot find matches.");
+                    return [];
+                }
                 const safeText = escapeRegExp(textToFind);
-                // Ensure the regex searches the *plain text* of the OCR content
                 const regex = new RegExp(safeText, 'gi');
                 const matches = [];
+    
                 let match;
-                while ((match = regex.exec(fullOcrText)) !== null) {
+                while ((match = regex.exec(plainTextContent)) !== null) {
+                    // console.log('match:', match);
                     matches.push({
                         start: match.index,
                         length: match[0].length
@@ -262,113 +231,227 @@
                 }
                 return matches;
             }
-
-            function wrapTextByPosition(container, textToHighlight, start, length, type) {
-                let currentPos = 0;
-                // This logic needs to correctly handle existing marks in the DOM if any.
-                // It's safer to always render plain text then apply marks.
-                // Our renderHighlights already does this, so this function is fine.
+    
+            // Fungsi untuk membungkus teks dengan tag <mark> pada posisi tertentu
+            // Ini memodifikasi DOM
+            function wrapTextByPosition(textToHighlight, start, length, type) {
+                if (!ocrContentDiv || !textToHighlight || typeof start === 'undefined' || typeof length === 'undefined' || !type) {
+                    console.error("[wrapTextByPosition] Invalid arguments. Skipping.");
+                    return;
+                }
+                if (start < 0 || start + length > plainTextContent.length) {
+                    console.error(`[wrapTextByPosition] Invalid range: start=${start}, length=${length}. plainTextContent length: ${plainTextContent.length}. Skipping.`);
+                    return;
+                }
+                 // Double check if the segment of plainTextContent matches the textToHighlight
+                const segment = plainTextContent.substring(start, start + length);
+                if (segment !== textToHighlight) {
+                    console.warn(`[wrapTextByPosition] Text mismatch at calculated position. Expected "${textToHighlight}", found "${segment}". Attempting to proceed but might be inaccurate.`);
+                }
+    
+    
                 for (const info of textNodes) {
                     const nodeStart = info.offset;
                     const nodeEnd = info.offset + info.node.nodeValue.length;
-
-                    if (start >= nodeStart && start + length <= nodeEnd) {
+    
+                    // Cek apakah rentang highlight sepenuhnya berada di dalam node teks ini
+                    // Penting: start < nodeEnd memastikan start berada di dalam node
+                    // dan (start + length) <= nodeEnd memastikan highlight tidak keluar dari node
+                    if (start >= nodeStart && start < nodeEnd && (start + length) <= nodeEnd) {
                         const range = document.createRange();
                         range.setStart(info.node, start - nodeStart);
                         range.setEnd(info.node, start - nodeStart + length);
-
+    
+                        // Hindari menyoroti bagian yang sudah ditandai, jika ada
+                        if (range.commonAncestorContainer.closest && range.commonAncestorContainer.closest('mark')) {
+                            console.warn("[wrapTextByPosition] Skipping highlight: part already marked.");
+                            return;
+                        }
+    
                         const mark = document.createElement("mark");
                         mark.setAttribute("data-type", type);
-                        mark.style.backgroundColor = typeColors[type];
-                        mark.textContent = textToHighlight;
-
-                        range.deleteContents();
-                        range.insertNode(mark);
-                        break;
+                        mark.style.backgroundColor = typeColors[type] || "#ccc"; // Fallback color
+                        mark.textContent = textToHighlight; // Memastikan teks yang ditandai sesuai
+    
+                        try {
+                            range.deleteContents(); // Hapus teks asli dari range
+                            range.insertNode(mark); // Sisipkan mark baru
+                            console.log(`[wrapTextByPosition] Wrapped "${textToHighlight}" (type: ${type}) at start ${start}.`);
+                        } catch (e) {
+                            console.error(`[wrapTextByPosition] Error inserting node for "${textToHighlight}" (type: ${type}) at start ${start}:`, e);
+                        }
+                        return; // Berhasil membungkus, keluar dari loop
                     }
                 }
+                console.warn(`[wrapTextByPosition] Could not wrap text "${textToHighlight}" (type: ${type}) at start ${start} length ${length}. Node not found or range invalid within textNodes map.`);
             }
-
-            window.saveAnnotation = function() {
-                const selectedType = document.getElementById("type-dropdown").value;
-                const ocrContentDiv = document.getElementById("ocr-content");
-
-                if (!selectedType || !currentSelection) {
-                    alert("Silakan pilih jenis anotasi.");
+    
+            // Fungsi untuk merender semua highlight dari data annotations
+            function renderHighlights() {
+                console.log('[renderHighlights] called.');
+                if (!ocrContentDiv) {
+                    console.error("[renderHighlights] ocrContentDiv not set. Skipping.");
                     return;
                 }
-
-                const { range } = currentSelection;
-                const selectedText = range.toString().trim();
-
-                if (!selectedText) return;
-
-                const mark = document.createElement("mark");
-                mark.setAttribute("data-type", selectedType);
-                mark.style.backgroundColor = typeColors[selectedType];
-                mark.textContent = selectedText;
-
-                range.deleteContents();
-                range.insertNode(mark);
-
+    
+                // 1. Dapatkan konten OCR asli dari Alpine Scope (pastikan tidak ada highlight)
                 const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
-
-                let updatedAnnotations = (alpineDataScope.annotations || []).filter(ann => !ann.hasOwnProperty(selectedType));
-                updatedAnnotations.push({ [selectedType]: selectedText });
-
-                // Dispatch update back to Livewire
+                const originalOcrHtml = alpineDataScope.ocr;
+    
+                // 2. SELALU bersihkan DOM dan bangun ulang textNodes dari konten OCR asli
+                initTextNodes(originalOcrHtml); // Ini akan mereset innerHTML dan membangun plainTextContent & textNodes
+    
+                const annotationsObject = alpineDataScope.annotations || {};
+                console.log('[renderHighlights] Annotations to render:', annotationsObject);
+    
+                // 3. Ubah annotations menjadi array dan urutkan berdasarkan posisi 'start' secara DESCENDING
+                // Ini KRITIS untuk menghindari masalah offset saat menyisipkan elemen
+                const sortedAnnotations = Object.entries(annotationsObject)
+                    .map(([key, data]) => ({ key, ...data }))
+                    .filter(a => typeof a.start === 'number' && typeof a.length === 'number' && typeof a.text === 'string' && a.text.length > 0)
+                    .sort((a, b) => b.start - a.start); // Urutkan dari akhir ke awal
+    
+                console.log('[renderHighlights] Sorted Annotations:', sortedAnnotations);
+    
+                // 4. Terapkan highlight
+                sortedAnnotations.forEach(annotation => {
+                    wrapTextByPosition(
+                        annotation.text,
+                        annotation.start,
+                        annotation.length,
+                        annotation.key
+                    );
+                });
+                console.log('[renderHighlights] Highlighting process finished.');
+            }
+    
+            // Fungsi untuk menyimpan anotasi baru setelah seleksi
+            window.saveAnnotation = function() {
+                const selectedType = document.getElementById("type-dropdown").value;
+                const selection = window.getSelection();
+    
+                if (!selectedType || !selection || selection.rangeCount === 0 || selection.isCollapsed) {
+                    alert("Silakan pilih jenis anotasi dan pastikan ada teks yang terpilih.");
+                    return;
+                }
+                if (!ocrContentDiv) {
+                    console.error("[saveAnnotation] ocrContentDiv not set. Cannot save.");
+                    return;
+                }
+    
+                // CRITICAL: Bersihkan DOM dan inisialisasi ulang textNodes SEBELUM mendapatkan offsets
+                // Ini memastikan perhitungan offset berdasarkan DOM yang bersih.
+                initTextNodes();
+    
+                const globalOffsets = getSelectionGlobalOffsets(selection, ocrContentDiv, plainTextContent);
+    
+                if (!globalOffsets) {
+                    alert("Gagal mendapatkan posisi teks yang dipilih. Coba lagi.");
+                    document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
+                    return;
+                }
+    
+                const { start: startIndex, length: selectedLength } = globalOffsets;
+                const selectedText = selection.toString().trim();
+    
+                if (!selectedText) {
+                    document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
+                    return;
+                }
+    
+                const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
+    
+                // Perbarui objek annotations di Alpine (yang akan dikirim ke Livewire)
+                let updatedAnnotationsObject = { ...alpineDataScope.annotations };
+                updatedAnnotationsObject[selectedType] = {
+                    text: selectedText,
+                    start: startIndex,
+                    length: selectedLength
+                };
+                console.log('[saveAnnotation] Annotation to save:', updatedAnnotationsObject[selectedType]);
+    
+                // Dispatch update ke Livewire. Alpine watcher akan memicu renderHighlights.
                 alpineDataScope.dispatchUpdate(
-                    ocrContentDiv.textContent, // Get the current plain text (from the div)
-                    updatedAnnotations
+                    ocrContentDiv.textContent, // Konten OCR yang saat ini (mungkin sudah diedit oleh user)
+                    updatedAnnotationsObject
                 );
-
+    
                 document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
                 currentSelection = null;
-                console.log('Annotation saved and dispatched.');
             };
-
+    
+            // Fungsi untuk menampilkan modal pemilihan jenis anotasi
             window.showModalAtPosition = function(range) {
                 document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
-
+    
                 const modalOverlay = document.createElement("div");
                 modalOverlay.className = "modal-overlay fixed z-50 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center";
-
+    
                 const template = document.getElementById("annotation-modal");
                 const modalContent = template.content.cloneNode(true);
                 modalOverlay.appendChild(modalContent);
                 document.body.appendChild(modalOverlay);
-
+    
                 modalOverlay.addEventListener("click", (e) => {
                     if (e.target === modalOverlay) {
                         modalOverlay.remove();
                     }
                 });
-                console.log('Modal shown.');
             };
-
+    
+            // Event listener DOMContentLoaded untuk inisialisasi awal
             document.addEventListener("DOMContentLoaded", () => {
-                const editableDiv = document.getElementById("ocr-content");
-
-                editableDiv.addEventListener("mouseup", () => {
+                ocrContentDiv = document.getElementById("ocr-content"); // Inisialisasi referensi global
+                if (!ocrContentDiv) {
+                    console.error("Editable div #ocr-content not found on DOMContentLoaded.");
+                    return;
+                }
+    
+                // Inisialisasi awal plainTextContent dan textNodes.
+                // Ini akan dipanggil lagi oleh renderHighlights, tapi penting untuk setup awal.
+                initTextNodes();
+    
+                ocrContentDiv.addEventListener("mouseup", () => {
                     const selection = window.getSelection();
                     if (selection.rangeCount > 0 && !selection.isCollapsed) {
                         const range = selection.getRangeAt(0);
                         const parentMark = range.commonAncestorContainer.closest?.("mark");
-
+    
                         if (parentMark) {
                             alert("Bagian ini sudah di-highlight.");
                             return;
                         }
-
+    
                         currentSelection = {
                             text: selection.toString(),
                             range: range
                         };
-
-                        window.showModalAtPosition(range);
+    
+                        showModalAtPosition(range);
                     }
                 });
-                console.log('DOMContentLoaded: Mouseup listener added.');
+    
+                // Event listener untuk menghapus highlight saat diklik
+                ocrContentDiv.addEventListener('click', (event) => {
+                    if (event.target.tagName === 'MARK') {
+                        const mark = event.target;
+                        const dataType = mark.getAttribute('data-type');
+                        if (confirm(`Hapus highlight untuk "${dataType}"?`)) {
+                            // Hapus mark dari DOM
+                            mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
+    
+                            const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
+                            let updatedAnnotationsObject = { ...alpineDataScope.annotations };
+                            delete updatedAnnotationsObject[dataType]; // Hapus annotation dari objek
+                            alpineDataScope.dispatchUpdate(
+                                ocrContentDiv.textContent, // Kirim teks yang sudah diubah jika user mengedit
+                                updatedAnnotationsObject
+                            );
+                            // renderHighlights() akan terpanggil oleh watcher annotations
+                            // initTextNodes() akan terpanggil di awal renderHighlights()
+                        }
+                    }
+                });
             });
         </script>
     @endpush

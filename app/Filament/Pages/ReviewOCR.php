@@ -2,245 +2,227 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Forms\Concerns\InteractsWithForms; // For using forms
-use Filament\Actions\Concerns\InteractsWithActions; // For using Filament actions (like your save button)
-use Filament\Notifications\Notification; // For showing notifications
-use Filament\Pages\Page; // Base class for custom pages
-use App\Models\Surat; // Your Surat model
-use Illuminate\Support\Collection; // For working with collections of models
-use Illuminate\Support\Facades\Log; // For logging
-use Livewire\Attributes\On; // For Livewire event listeners
-use Filament\Forms\Components\Select; // Filament form components
-use Filament\Forms\Components\TextInput; // Filament form components
-use Illuminate\Database\Eloquent\Model; // For type hinting
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use App\Models\Surat;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\On;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+use Filament\Actions\Action;
+use Filament\Forms\Form; // IMPORTANT: Ensure this is imported for type hinting
 
 class ReviewOCR extends Page
 {
-    // Define the Blade view for this page
     protected static string $view = 'filament.pages.review-o-c-r';
-
-    // Optional: Navigation icon and title
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $title = 'Review Hasil OCR';
+    protected static ?string $slug = 'review-ocr-results/{taskId}';
+    protected static bool $shouldRegisterNavigation = false;
 
-    // Traits for Filament functionalities
     use InteractsWithForms;
     use InteractsWithActions;
 
-    // Public properties to hold data for the Livewire component
-    public string $taskId; // This will receive the task_id from the URL
-    public Collection $foundLetters; // Collection of all Surat models for this task_id
-
-    // This array will hold the form data for all documents.
-    // The keys will be document_index, and values will be arrays of form field data.
+    // Public properties
+    public string $taskId;
+    public Collection $foundLetters;
     public array $documentsData = [];
-
-    // Properties to control the OCR viewer (which document is currently displayed)
     public string $ocr = '';
-    public $annotations = []; // This will be the extracted fields for the currently viewed document
+    public $annotations = [];
     public $letter_type;
-    public ?int $selectedDocumentIndexForViewer = null; // Index of the document currently shown in the OCR viewer
+    public ?int $selectedDocumentIndexForViewer = null;
 
-    /**
-     * Define the route parameter for this page.
-     * This makes the page accessible via /admin/review-ocr-results/{taskId}
-     */
-    protected static ?string $slug = 'review-ocr-results/{taskId}';
+    // --- Wizard Specific Properties ---
+    public ?int $currentWizardStepIndex = 0;
+    public ?Surat $currentDocumentModel = null;
 
-    protected static bool $shouldRegisterNavigation = false;
+    public function getHeading(): string { return "Hasil OCR"; }
+    public function getSubheading(): string { return "Cek kembali hasil OCR berikut ini, pastikan data yang disimpan telah sesuai."; }
 
-    /**
-     * This method is called when the Livewire component is initialized.
-     * It fetches all relevant documents based on the taskId.
-     *
-     * @param string|null $taskId The task_id from the URL.
-     * @return void
-     */
     public function mount(?string $taskId = null): void
     {
-        if (is_null($taskId)) {
-            abort(404, 'Task ID tidak ditemukan.');
-        }
-
+        if (is_null($taskId)) { abort(404, 'Task ID tidak ditemukan.'); }
         $this->taskId = $taskId;
 
-        // Fetch all Surat records associated with this taskId
         $this->foundLetters = Surat::where('task_id', $this->taskId)
                                     ->orderBy('document_index')
                                     ->get();
 
-        if ($this->foundLetters->isEmpty()) {
-            abort(404, 'Tidak ada dokumen ditemukan untuk Task ID ini.');
-        }
+        if ($this->foundLetters->isEmpty()) { abort(404, 'Tidak ada dokumen ditemukan untuk Task ID ini.'); }
 
-        // Initialize $documentsData array for all documents.
-        // Each key will be the document_index, and value will be an array of form fields.
         foreach ($this->foundLetters as $letter) {
             $this->documentsData[$letter->document_index] = [
                 'letter_type' => $letter->letter_type,
-                // Add other manual fields here from your Surat model if they exist
-                // e.g., 'nomor_surat' => $letter->nomor_surat,
-                // For extracted_fields, they are typically dynamic, so we'll handle them
-                // via the annotations directly from the OCR viewer's updates.
             ];
         }
 
-        // dd($this->documentsData);
+        $this->currentWizardStepIndex = 0;
+        $this->loadDocumentForWizardStep();
+    }
 
-        // Set the first document as the one to be displayed initially in the OCR viewer
-        $firstDocument = $this->foundLetters->first();
-        if ($firstDocument) {
-            $this->letter_type = $firstDocument->letter_type;
-            $this->selectedDocumentIndexForViewer = $firstDocument->document_index;
-            $this->loadDocumentForViewer($firstDocument);
+    public function loadDocumentForWizardStep(): void
+    {
+        $documentToLoad = $this->foundLetters->get($this->currentWizardStepIndex);
+
+        if (!$documentToLoad) {
+            Notification::make()->title('Gagal memuat dokumen untuk langkah wizard.')->danger()->send();
+            return;
         }
-    }
 
-    /**
-     * Defines the schema for the form components used for each document.
-     * This method will be called dynamically for each document.
-     *
-     * @return array<mixed>
-     */
-    protected function getFormSchema(): array
-    {
-        return [
-            // \Filament\Forms\Components\Hidden::make('pdf_path'),
-            // \Filament\Forms\Components\Hidden::make('ocr_text'),
-            \Filament\Forms\Components\Select::make('letter_type')->label('Jenis Surat')->options([
-                'Surat Pernyataan' => 'Surat Pernyataan',
-                'Surat Keterangan' => 'Surat Keterangan',
-                'Surat Tugas' => 'Surat Tugas',
-                'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
-            ])
-            ->required()
-            ->default(fn (?Model $record) => $record?->letter_type),
-        ];
-    }
+        $this->currentDocumentModel = $documentToLoad;
+        $this->selectedDocumentIndexForViewer = $documentToLoad->document_index;
 
-    /**
-     * Action for the main save button.
-     *
-     * @return array<\Filament\Actions\Action>
-     */
-    protected function getFormActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('saveAll')
-                ->label('Simpan Semua Dokumen')
-                ->action(function () {
-                    $this->saveAllDocuments();
-                })
-                ->button()
-                ->color('primary')
-                ->icon('heroicon-o-check-circle'),
-        ];
-    }
+        $this->ocr = $documentToLoad->ocr_text ?? '';
+        $this->annotations = json_decode($documentToLoad->extracted_fields ?? '[]', true);
 
-    /**
-     * Loads the OCR text and annotations for a specific document into the viewer.
-     * This method is called when the user selects a document from the viewer dropdown.
-     *
-     * @param Surat $document The Surat model instance to display.
-     * @return void
-     */
-    public function loadDocumentForViewer(Surat $document): void
-    {
-        $this->ocr = $document->ocr_text ?? '';
-        // Ensure extracted_fields is decoded from JSON if it's stored as JSON string
-        $this->annotations = json_decode($document->extracted_fields ?? '[]', true);
-        $this->selectedDocumentIndexForViewer = $document->document_index;
-
-        // Dispatch event to your frontend Blade component for highlighting
         $this->dispatch('ocr-loaded', [
             'ocr' => $this->ocr,
             'extracted_fields' => $this->annotations,
         ]);
+
+        // --- FIX IS HERE ---
+        // Correctly access the named form instance
+        $this->getForm('wizardForm')->fill($this->documentsData[$this->selectedDocumentIndexForViewer]);
+        // --- END FIX ---
+        Notification::make()->title('Memuat Dokumen ' . $this->selectedDocumentIndexForViewer)->success()->send();
     }
 
-    /**
-     * Livewire event listener to update OCR text and annotations from the frontend.
-     * This is called when the user manually selects/highlights text in the OCR viewer.
-     *
-     * @param int $documentIndex The document_index of the document being updated.
-     * @param string $ocr_final The final OCR text after user edits.
-     * @param array $annotations_final The final annotations after user selections.
-     * @return void
-     */
-    #[On('data-ready')] // Ensure your frontend dispatches 'data-ready' with these params
+    protected function getFormSchema(): array
+    {
+        return [
+            Select::make('letter_type')
+                ->label('Jenis Surat')
+                ->options([
+                    'Surat Pernyataan' => 'Surat Pernyataan',
+                    'Surat Keterangan' => 'Surat Keterangan',
+                    'Surat Tugas' => 'Surat Tugas',
+                    'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
+                ])
+                ->required()
+                ->default(fn (?Model $record) => $record?->letter_type)
+                ->live(),
+        ];
+    }
+
+    protected function getForms(): array
+    {
+        return [
+            'wizardForm' => $this->makeForm()
+                ->schema([
+                    Wizard::make($this->getWizardSteps())
+                        ->startOnStep($this->currentWizardStepIndex)
+                        ->skippable(false)
+                        ->submitAction(
+                            Action::make('submit')
+                                ->label(fn (Wizard $wizard) => $this->isLastWizardStep() ? 'Selesai & Simpan Semua' : 'Simpan & Lanjutkan')
+                                ->action(function () {
+                                    $this->saveCurrentDocumentAndAdvance();
+                                })
+                        )
+                        ->extraAttributes([
+                            'wire:ignore.self',
+                            'x-on:step-activated.stop' => 'Livewire.dispatch(\'wizard-step-changed\', {stepIndex: $event.detail.step});',
+                        ]),
+                ])
+                ->statePath('documentsData.' . ($this->selectedDocumentIndexForViewer ?? 'default')),
+        ];
+    }
+
+    protected function getWizardSteps(): array
+    {
+        $steps = [];
+        foreach ($this->foundLetters as $index => $letter) {
+            $steps[] = Step::make('Dokumen ' . $letter->document_index)
+                ->description($letter->letter_type ?? 'Tidak Diketahui')
+                ->schema([
+                    ...$this->getFormSchema(),
+                ]);
+        }
+        return $steps;
+    }
+
+    public function isLastWizardStep(): bool
+    {
+        return $this->currentWizardStepIndex === $this->foundLetters->count() - 1;
+    }
+
+    #[On('wizard-step-changed')]
+    public function onWizardStepChanged(array $eventData): void
+    {
+        $newStepIndex = $eventData['stepIndex'];
+        $this->currentWizardStepIndex = $newStepIndex;
+        $this->loadDocumentForWizardStep();
+    }
+
+    public function saveCurrentDocumentAndAdvance(): void
+    {
+        $currentDocument = $this->currentDocumentModel;
+
+        if (!$currentDocument) {
+            Notification::make()->title('Dokumen tidak ditemukan untuk disimpan.')->danger()->send();
+            return;
+        }
+
+        try {
+            // Validate the form for the current step
+            // --- FIX IS HERE ---
+            // Access the named form instance
+            $this->getForm('wizardForm')->validate();
+            $formData = $this->getForm('wizardForm')->getState();
+            // --- END FIX ---
+
+            $currentDocument->fill([
+                'letter_type' => $formData['letter_type'],
+            ]);
+
+            $currentDocument->extracted_fields = json_encode($currentDocument->extracted_fields);
+
+            $currentDocument->save();
+            Notification::make()->title('Dokumen ' . $currentDocument->document_index . ' berhasil disimpan.')->success()->send();
+
+            if ($this->isLastWizardStep()) {
+                $this->redirect(route('filament.admin.resources.surat-masuks.index'));
+            }
+
+        } catch (\Throwable $e) {
+            Log::error("Error saving current document {$currentDocument->id}: " . $e->getMessage());
+            Notification::make()->title('Gagal menyimpan dokumen ' . $currentDocument->document_index . '.')->danger()->send();
+        }
+    }
+
+    public function loadDocumentForViewer(int $documentIndex): void
+    {
+        $document = $this->foundLetters->firstWhere('document_index', $documentIndex);
+        if (!$document) { /* ... */ return; }
+
+        $this->ocr = $document->ocr_text ?? '';
+        $this->annotations = json_decode($document->extracted_fields ?? '[]', true);
+        $this->selectedDocumentIndexForViewer = $document->document_index;
+
+        $this->dispatch('ocr-loaded', [
+            'ocr' => $this->ocr,
+            'extracted_fields' => $this->annotations,
+        ]);
+        Notification::make()->title('Menampilkan Dokumen ' . $this->selectedDocumentIndexForViewer)->success()->send();
+    }
+
+    #[On('data-ready')]
     public function updateDocumentOcrAndAnnotations(int $documentIndex, string $ocr_final, array $annotations_final): void
     {
-        // Find the specific Surat model instance in the collection
         $suratToUpdate = $this->foundLetters->firstWhere('document_index', $documentIndex);
-
         if ($suratToUpdate) {
-            // Update the model instance directly in the `$foundLetters` collection
-            // These changes will be persisted when `saveAllDocuments` is called.
             $suratToUpdate->ocr_text = $ocr_final;
-            $suratToUpdate->extracted_fields = $annotations_final; // Keep as array here for later JSON encoding
-
-            Notification::make()
-                ->title('Perubahan untuk Dokumen ' . $documentIndex . ' disiapkan.')
-                ->success()
-                ->send();
+            $suratToUpdate->extracted_fields = $annotations_final;
+            Notification::make()->title('Perubahan untuk Dokumen ' . $documentIndex . ' disiapkan.')->success()->send();
         } else {
-             Notification::make()
-                ->title('Gagal menemukan dokumen untuk diperbarui.')
-                ->danger()
-                ->send();
+             Notification::make()->title('Gagal menemukan dokumen untuk diperbarui.')->danger()->send();
         }
-    }
-
-    /**
-     * Saves all documents in the `$foundLetters` collection.
-     * This method is called by the "Simpan Semua Dokumen" action.
-     *
-     * @return void
-     */
-    public function saveAllDocuments(): void
-    {
-        $savedCount = 0;
-        $errorCount = 0;
-
-        // Loop through each Surat model in the collection
-        foreach ($this->foundLetters as $letter) {
-            try {
-                // Fill the model with data from the form component (if it exists)
-                // $this->documentsData[$letter->document_index] contains the data from the form fields.
-                $formDataForDocument = $this->documentsData[$letter->document_index];
-
-                $letter->fill([
-                    'letter_type' => $formDataForDocument['letter_type'],
-                    // Fill other manual form fields here from $formDataForDocument
-                    // 'nomor_surat' => $formDataForDocument['nomor_surat'],
-                ]);
-
-                // ocr_text and extracted_fields are updated via updateDocumentOcrAndAnnotations
-                // Ensure extracted_fields is encoded to JSON before saving to DB
-                $letter->extracted_fields = json_encode($letter->extracted_fields);
-
-                $letter->save();
-                $savedCount++;
-            } catch (\Throwable $e) {
-                Log::error("Error saving document {$letter->id}: " . $e->getMessage());
-                $errorCount++;
-            }
-        }
-
-        if ($savedCount > 0) {
-            Notification::make()
-                ->title("Berhasil menyimpan {$savedCount} dokumen.")
-                ->success()
-                ->send();
-        }
-        if ($errorCount > 0) {
-            Notification::make()
-                ->title("Gagal menyimpan {$errorCount} dokumen.")
-                ->danger()
-                ->send();
-        }
-
-        // Redirect after saving all documents
-        $this->redirect(route('filament.admin.resources.surat-masuks.index'));
     }
 }
