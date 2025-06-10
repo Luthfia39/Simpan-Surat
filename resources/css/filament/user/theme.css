@@ -48,3 +48,11 @@
     background-color: #10B981 !important; 
     color: white !important;
 }
+
+.fi-logo.flex.text-xl.tracking-tight {
+    color: white !important;
+}
+
+.fi-simple-main {
+    background-color: #bcbcd8 !important;
+}
