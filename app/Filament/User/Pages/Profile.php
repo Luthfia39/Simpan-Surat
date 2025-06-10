@@ -103,6 +103,5 @@ class Profile extends Page implements HasForms
     {
         $this->isEditing = false;
         $this->dispatch('reload-page');
-        // $this->form->fill(Auth::user()->toArray());
     }
 }
