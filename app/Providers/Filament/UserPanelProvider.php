@@ -45,13 +45,13 @@ class UserPanelProvider extends PanelProvider
                 'primary' => '#5a5aa3',
             ])
             ->sidebarCollapsibleOnDesktop()
-            // ->brandName('SuratTEDI')
+            ->brandName('SuratTEDI')
             ->darkMode(false)
             ->font('Plus Jakarta Sans')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/User/Pages'), for: 'App\\Filament\\User\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                // Pages\Dashboard::class,
                 Profile::class
             ])
             ->discoverWidgets(in: app_path('Filament/User/Widgets'), for: 'App\\Filament\\User\\Widgets')

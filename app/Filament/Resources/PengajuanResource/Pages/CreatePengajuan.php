@@ -10,10 +10,12 @@ class CreatePengajuan extends CreateRecord
 {
     protected static string $resource = PengajuanResource::class;
 
+    protected ?string $heading = "Buat pengajuan";
+
+    protected ?string $subheading = "Isi data berikut untuk melakukan proses pengajuan surat";
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Jika user bukan admin, dan field 'status' tidak ada dalam data (karena disembunyikan),
-        // maka set nilai default 'pending'.
         if (!auth()->user()->is_admin) {
             if (!isset($data['user_id'])) {
                 $data['user_id'] = auth()->user()->id;
@@ -31,10 +33,22 @@ class CreatePengajuan extends CreateRecord
 
     protected function getFormActions(): array
     {
-        // Panggil metode parent untuk mendapatkan aksi default
         $actions = parent::getFormActions();
 
-        // Filter aksi untuk menghilangkan 'createAndCreateAnotherAction'
-        return array_filter($actions, fn (Action $action) => $action->getName() !== 'createAnother');
+        // Iterasi dan modifikasi aksi
+        $modifiedActions = array_map(function (Action $action) {
+            switch ($action->getName()) {
+                case 'create':
+                    // Ubah label tombol 'Create' menjadi 'Buat Pengajuan'
+                    return $action->label('Buat Pengajuan');
+                case 'cancel':
+                    // Ubah label tombol 'Cancel' menjadi 'Batal'
+                    return $action->label('Batal');
+                // Aksi 'createAndCreateAnother' akan difilter setelah map
+            }
+            return $action;
+        }, $actions);
+
+        return array_filter($modifiedActions, fn (Action $action) => $action->getName() !== 'createAnother');
     }
 }

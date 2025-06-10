@@ -353,11 +353,6 @@ class PengajuanResource extends Resource
                 Tables\Columns\TextColumn::make('data_surat.nama')
                     ->label('Nama Pengaju (Surat)')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat Pada')
-                    ->dateTime('d M Y H:i:s')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -371,7 +366,10 @@ class PengajuanResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
-                ->hidden(!Auth::user()->is_admin),
+                    ->visible(fn (\App\Models\Pengajuan $record): bool =>
+                        auth()->user()->is_admin &&
+                        ($record->status !== 'selesai' && $record->status !== 'ditolak')
+                    ),
                 Tables\Actions\Action::make('createSuratKeluar')
                     ->label('Buat Surat Keluar')
                     ->icon('heroicon-o-arrow-top-right-on-square')

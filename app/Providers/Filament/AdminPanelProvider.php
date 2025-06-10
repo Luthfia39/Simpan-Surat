@@ -20,6 +20,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 use App\Filament\Widgets\SuratStatistic;
 use App\Filament\Widgets\SuratOverview;
+use App\Filament\Widgets\PengajuanStatistic;
 
 use App\Filament\Pages\Auth\Login;
 
@@ -33,7 +34,6 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->colors([
                 'primary' => Color::Blue,
-                // 'secondary' => Color::Amber,
             ])
             ->sidebarCollapsibleOnDesktop()
             ->brandName('SuratTEDI')
@@ -48,8 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 SuratStatistic::class,
                 SuratOverview::class,
-                // Widgets\AccountWidget::class,
-                // Widgets\FilamentInfoWidget::class,
+                PengajuanStatistic::class,
             ])
             ->middleware([
                 EncryptCookies::class,

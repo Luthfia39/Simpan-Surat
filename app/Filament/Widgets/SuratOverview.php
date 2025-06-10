@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use Filament\Widgets\ChartWidget;
 use App\Models\Surat;
 use App\Models\SuratKeluar;
+use App\Models\Pengajuan;
 
 class SuratOverview extends ChartWidget
 {
@@ -41,6 +42,7 @@ class SuratOverview extends ChartWidget
 
         $suratMasukData = [];
         $suratKeluarData = [];
+        $pengajuanData = [];
 
         foreach ($bulan as $index => $namaBulan) {
             $month = $index + 1;
@@ -52,9 +54,13 @@ class SuratOverview extends ChartWidget
             $keluar = SuratKeluar::whereYear('created_at', $tahun)
                 ->whereMonth('created_at', $month)
                 ->count();
+            $pengajuan = Pengajuan::whereYear('created_at', $tahun)
+                ->whereMonth('created_at', $month)
+                ->count();
 
             $suratMasukData[] = $masuk;
             $suratKeluarData[] = $keluar;
+            $pengajuanData[] = $pengajuan;
         }
 
         return [

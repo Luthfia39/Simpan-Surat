@@ -15,19 +15,22 @@ class SuratStatistic extends BaseWidget
 
         return [
             Stat::make('Total Surat', $suratMasuk + $suratKeluar)
-                ->description('Surat masuk & keluar')
-                // ->descriptionIcon('heroicon-o-arrow-path')
-                ->color('warning'), // Kuning
+                ->color('primary')
+                ->extraAttributes([
+                    'style' => '--tw-ring-color: blue',
+                ]), 
 
             Stat::make('Surat Keluar', $suratKeluar)
-                ->description('Jumlah surat keluar terbaru')
-                // ->descriptionIcon('heroicon-o-arrow-path')
-                ->color('primary'), // Biru
+                ->color('#F59E0B')
+                ->extraAttributes([
+                    'style' => '--tw-ring-color: #F59E0B',
+                ]),
 
             Stat::make('Surat Masuk', $suratMasuk)
-                ->description('Jumlah surat masuk terbaru')
-                ->descriptionColor('danger') // Merah
-                ->color('secondary'), // Hijau
+                ->color('#10B981')
+                ->extraAttributes([
+                    'style' => '--tw-ring-color: #10B981',
+                ]), 
         ];
     }
 }

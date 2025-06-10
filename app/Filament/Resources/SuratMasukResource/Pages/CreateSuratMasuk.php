@@ -75,7 +75,7 @@ class CreateSuratMasuk extends CreateRecord
             $pdfUrl = asset('storage/' . $filePath);
 
             $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://192.168.1.27:3000/submit_pdf');
+                ->post('http://172.20.1.34:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {
