@@ -13,7 +13,7 @@
         "laravel/socialite": "^5.21",
         "laravel/tinker": "^2.9",
         "livewire/livewire": "^3.5",
-        "mongodb/laravel-mongodb": "^5.2",
+        "mongodb/laravel-mongodb": "^5.4",
         "socialiteproviders/google": "^4.1",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },

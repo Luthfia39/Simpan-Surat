@@ -46,7 +46,8 @@ class SuratMasukResource extends Resource
                 ->required()
                 ->storeFiles(false)
                 ->maxFiles(1)
-                ->columnSpan(2),
+                ->columnSpan(2)
+                ->helperText('Format file harus berupa file PDF'),
             ]);
     }
 

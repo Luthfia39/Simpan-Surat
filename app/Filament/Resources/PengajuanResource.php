@@ -338,6 +338,7 @@ class PengajuanResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('template.name')
                     ->label('Template')
+                    ->getStateUsing(fn ($record) => dd(gettype($record->metadata)))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\BadgeColumn::make('status')
@@ -362,6 +363,16 @@ class PengajuanResource extends Resource
                         'selesai' => 'Selesai',
                         'ditolak' => 'Ditolak',
                     ]),
+                Tables\Filters\SelectFilter::make('template.name')
+                    ->options(Template::all()->pluck('name')->toArray())
+                    ->query(function (Builder $query, array $data): Builder {
+                        
+                        if (isset($data['value']) && !empty($data['value'])) {
+                            dd(gettype($query->pluck('metadata')));
+                            $query->where('template.name', $data['value']);
+                        }
+                        return $query;
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -393,8 +404,6 @@ class PengajuanResource extends Resource
                                 return;
                             }
     
-                            // Prioritaskan nomor surat dari admin yang diisi di data_surat
-                            // Jika tidak ada, fallback ke generate otomatis
                             $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
                             $prodiUser = $userData->major['kode'] ?? 'N/A'; // Prodi dari data user
     

@@ -14,7 +14,7 @@ class SuratKeluar extends Model
     use HasFactory;
 
     protected $connection = 'mongodb';
-    protected $collection = 'surat_keluar';
+    protected $collection = 'surat_keluars';
 
     protected $fillable = [
         'nomor_surat',
@@ -22,8 +22,18 @@ class SuratKeluar extends Model
         'jenis_surat',
         'pdf_url',
         'template_id',
-        'pengajuan_id'
+        'pengajuan_id',
+        'metadata'
     ];
+
+    protected function casts(): array
+    {
+        return 
+        [
+            'metadata' => 'array', 
+            'pdf_url' => 'string', 
+        ];
+    }
 
     /**
      * Get the prodi that owns the SuratKeluar

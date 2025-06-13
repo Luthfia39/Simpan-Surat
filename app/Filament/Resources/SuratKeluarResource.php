@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 
+use App\Enums\Major;
+
 class SuratKeluarResource extends Resource
 {
     protected static ?string $model = SuratKeluar::class;
@@ -29,8 +31,6 @@ class SuratKeluarResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-document-arrow-up';
 
     protected static ?string $navigationLabel = 'Surat Keluar';
-
-    // protected static ?string $navigationGroup = 'Surat Keluar';
 
     public static function form(Form $form): Form
     {
@@ -50,50 +50,64 @@ class SuratKeluarResource extends Resource
 
                 TextColumn::make('nomor_surat')
                     ->label('Nomor Surat')
-                    // ->getStateUsing(fn (Model $record): ?string => 
-                    //     $record->pdf_url ?? null
-                    // )
-                    // ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
-                    // ->badge()
-                    // ->color(fn (string $state): string => match ($state) {
-                    //     'TRPL' => 'warning',
-                    //     'TRI' => 'info',
-                    //     'TRE' => 'success',
-                    //     'TRIK' => 'danger',
-                    //     default => 'gray',
-                    // })
                     ->sortable()
                     ->searchable(),
+
+                TextColumn::make('metadata.prodi')
+                    ->label('Program Studi')
+                    ->getStateUsing(function ($record) {
+                        $prodiCode = null;
+                        if (is_array($record->metadata)) {
+                            $prodiCode = $record->metadata['prodi'] ?? null;
+                        }
+                        elseif (is_object($record->metadata)) {
+                            $prodiCode = $record->metadata->prodi ?? null;
+                        }
+                        elseif (is_string($record->metadata)) {
+                             $decodedMetadata = json_decode($record->metadata, true);
+                             $prodiCode = $decodedMetadata['prodi'] ?? null; 
+                        }
+                        
+                        return Major::getNameByCode($prodiCode) ?? $prodiCode ?? '-';
+                    })
+                    ->sortable()
+                    // ->searchable(
+                    //     isIndividual: true,
+                    //     callback: fn (Builder $query, string $search) => 
+                    //         $query->where('metadata.prodi', 'regex', new \MongoDB\BSON\Regex($search, 'i'))
+                    // )
+                    // ->searchable(
+                    //     isIndividual: true,
+                    //     callback: function (Builder $query, string $search) {
+                    //         $query->where('metadata.prodi', 'regex', new \MongoDB\BSON\Regex($search, 'i'));
+                    //     }
+                    // ),
             ])
             ->filters([
-                SelectFilter::make('prodi')
-                    ->label('Program Studi')
-                    ->options([
-                        'TRPL' => 'Teknologi Rekayasa Perangkat Lunak',
-                        'TRI' => 'Teknologi Rekayasa Internet',
-                        'TRE' => 'Teknologi Rekayasa Elektro',
-                        'TRIK' => 'Teknologi Rekayasa Instrumentasi dan Kontrol',
-                    ]),
-            
-                // Filter::make('created_at')
-                //     ->form([
-                //         \Filament\Forms\Components\DatePicker::make('created_from')->label('Tanggal Mulai'),
-                //         \Filament\Forms\Components\DatePicker::make('created_until')->label('Tanggal Sampai'),
-                //     ])
-                //     ->query(fn (Builder $query, array $data) =>
-                //         $query
-                //             ->when($data['created_from'], fn ($q) => $q->whereDate('created_at', '>=', $data['created_from']))
-                //             ->when($data['created_until'], fn ($q) => $q->whereDate('created_at', '<=', $data['created_until']))
-                //     ),
+                // SelectFilter::make('Prodi')
+                //     ->options(Major::toArray())
+                //     ->modifyQueryUsing(function (Builder $query, array $state)
+                //         {
+                //             if (!empty($state['value'])) {
+                                // $a = json_decode(SuratKeluar::all()->toJson(), true);
+                                // dd($a);
+                                // dd(SuratKeluar::where('metadata.prodi', 'TRI')->get());
+                            // }
+                            // return $query->where('metadata.prodi', $state['value']);
+                            // dd($state);
+                            // return $state ? dd($state) : $query;
+                            // return $state ? $query->where(['metadata.prodi'], $state['value']) : $query;
+                    //     }
+                    // ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ])
             ->defaultSort('created_at', 'desc');
     }

@@ -8,10 +8,15 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\Actions;
 use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Infolist;
+use App\Enums\Major;
 
 class ViewSuratKeluar extends ViewRecord
 {
     protected static string $resource = SuratKeluarResource::class;
+
+    protected ?string $heading = "Detail surat keluar";
+
+    // protected ?string $subheading = "Detail surat keluar";
 
     // protected static string $view = 'filament.resources.surat-keluar-resource.pages.view-surat-keluar';
 
@@ -20,36 +25,36 @@ class ViewSuratKeluar extends ViewRecord
         return $infolist
             ->schema([
                 TextEntry::make('Nomor Surat')
-                    ->getStateUsing(fn ($record) => $record->extracted_fields['nomor_surat'][0] ?? '-')
+                    ->getStateUsing(fn ($record) => $record->nomor_surat ?? '-')
                     ->icon('heroicon-o-hashtag'),
 
+                TextEntry::make('Pengaju Surat')
+                    ->getStateUsing(fn ($record) => $record->metadata['nama'] ?? '-')
+                    ->icon('heroicon-o-user-circle'),
+
                 TextEntry::make('Jenis Surat')
-                    ->getStateUsing(fn ($record) => ucwords(str_replace('_', ' ', $record->letter_type)))
+                    ->getStateUsing(fn ($record) => $record->template->name)
                     ->badge()
-                    ->color(fn ($state) => match ($state) {
-                        'Surat Pernyataan' => 'warning',
-                        'Surat Keterangan' => 'info',
-                        'Surat Tugas' => 'success',
-                        default => 'gray'
+                    ->color('success'),
+
+                TextEntry::make('Prodi')
+                    ->getStateUsing(function ($record) {
+                        // Mengakses kode prodi dari metadata
+                        $prodiCode = $record->metadata['prodi'] ?? null;
+
+                        // Mengambil nama lengkap dari enum jika kode prodi ada
+                        if ($prodiCode) {
+                            return Major::getNameByCode($prodiCode) ?? $prodiCode; // Fallback ke kode jika nama tidak ditemukan
+                        }
+
+                        return '-'; // Jika kode prodi tidak ada
                     }),
-
-                TextEntry::make('Penanda Tangan')
-                    ->getStateUsing(fn ($record) => $record->extracted_fields['penanda_tangan'][0] ?? '-')
-                    ->icon('heroicon-o-user'),
-                    
-                TextEntry::make('Tanggal pembuatan')
-                    ->getStateUsing(fn ($record) => $record->extracted_fields['tanggal'][0] ?? '-')
-                    ->badge()
-                    ->color('warning'),
-
-                TextEntry::make('Teks Surat')
-                    ->getStateUsing(fn ($record) => $record->ocr_text ?? '-'),
 
                 // ⬇️ Bagian untuk download PDF
                 Actions::make([
                     Action::make('downloadPdf')
                         ->label('Download Berkas')
-                        ->url(fn ($record): string => asset('storage/suratKeluar/' . $record->pdf_url))
+                        ->url(fn ($record): string => asset('storage/surat_keluar/' . $record->pdf_url))
                         ->openUrlInNewTab()
                         ->icon('heroicon-o-arrow-down-tray'),
                 ])->columnSpanFull(),

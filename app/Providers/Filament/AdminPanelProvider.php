@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(Login::class)
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => '#2C3E50',
             ])
             ->sidebarCollapsibleOnDesktop()
             ->brandName('SuratTEDI')

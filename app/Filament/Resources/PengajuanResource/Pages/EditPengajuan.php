@@ -16,6 +16,10 @@ class EditPengajuan extends EditRecord
 {
     protected static string $resource = PengajuanResource::class;
 
+    protected ?string $heading = "Review Pengajuan";
+
+    protected ?string $subheading = "Cek pengajuan mahasiswa dan ubah statusnya";
+
     protected function getHeaderActions(): array
     {
         return [
@@ -130,5 +134,30 @@ class EditPengajuan extends EditRecord
                     !$record->surat_keluar_id             // Dan belum ada surat keluar yang terkait
                 ),
         ];
+    }
+
+    /**
+     * Mengatur aksi tombol di bagian bawah form.
+     * Mengubah label tombol 'save' dan 'cancel'.
+     */
+    protected function getFormActions(): array
+    {
+        // Panggil metode parent untuk mendapatkan aksi default
+        $actions = parent::getFormActions();
+
+        // Iterasi dan modifikasi aksi
+        $modifiedActions = array_map(function (Actions\Action $action) {
+            switch ($action->getName()) {
+                case 'save':
+                    // Ubah label tombol 'Save changes' menjadi 'Simpan'
+                    return $action->label('Simpan');
+                case 'cancel':
+                    // Ubah label tombol 'Cancel' menjadi 'Batal'
+                    return $action->label('Batal');
+            }
+            return $action;
+        }, $actions);
+
+        return $modifiedActions;
     }
 }

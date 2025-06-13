@@ -14,7 +14,14 @@ class ListPengajuans extends ListRecords
 
     protected ?string $heading = 'Pengajuan';
 
-    protected ?string $subheading = 'Berikut adalah semua pengajuan Anda.';
+    public function getSubheading(): string 
+    {
+        if (auth()->user()->is_admin) {
+            return 'Berikut adalah pengajuan surat dari mahasiswa';
+        } else {
+            return 'Berikut adalah semua pengajuan Anda';
+        }
+    }
 
     protected function getHeaderActions(): array
     {
