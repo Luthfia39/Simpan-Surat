@@ -17,7 +17,7 @@ use Filament\Forms\Components\Wizard\Step;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Filament\Actions\Action;
-use Filament\Forms\Form; // IMPORTANT: Ensure this is imported for type hinting
+use Filament\Forms\Form; 
 
 class ReviewOCR extends Page
 {
@@ -87,10 +87,8 @@ class ReviewOCR extends Page
             'extracted_fields' => $this->annotations,
         ]);
 
-        // --- FIX IS HERE ---
-        // Correctly access the named form instance
         $this->getForm('wizardForm')->fill($this->documentsData[$this->selectedDocumentIndexForViewer]);
-        // --- END FIX ---
+
         Notification::make()->title('Memuat Dokumen ' . $this->selectedDocumentIndexForViewer)->success()->send();
     }
 
@@ -171,12 +169,8 @@ class ReviewOCR extends Page
         }
 
         try {
-            // Validate the form for the current step
-            // --- FIX IS HERE ---
-            // Access the named form instance
             $this->getForm('wizardForm')->validate();
             $formData = $this->getForm('wizardForm')->getState();
-            // --- END FIX ---
 
             $currentDocument->fill([
                 'letter_type' => $formData['letter_type'],

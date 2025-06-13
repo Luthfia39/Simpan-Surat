@@ -72,7 +72,7 @@
                 <input type="hidden" id="annotations-input" x-model="annotations" />
     
                 <template id="annotation-modal">
-                    <div class="modal-overlay fixed z-50 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">
+                    <div class="modal-overlay fixed inset-0 z-[9999] bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">
                         <div class="bg-white rounded-lg shadow-xl p-6 w-80 text-center">
                             <h3>Pilih Jenis Kalimat/Kata</h3>
                             <select id="type-dropdown" class="block w-full mt-2 mb-4 border-gray-300 rounded">
@@ -81,19 +81,17 @@
                                 <option value="isi_surat">Isi Surat</option>
                                 <option value="penanda_tangan">Penanda Tangan</option>
                                 <option value="tanggal">Tanggal</option>
-                                <option value="nama_ortu">Nama Orang Tua</option>
-                                <option value="pekerjaan">Pekerjaan</option>
-                                <option value="nip">NIP</option>
-                                <option value="pangkat">Pangkat/Gol</option>
-                                <option value="instansi">Instansi</option>
-                                <option value="thn_akademik">Tahun Akademik</option>
-                                <option value="keterangan_surat">Keterangan Surat</option>
-                                <option value="jenis_surat">Jenis Surat</option>
                             </select>
-                            <button onclick="saveAnnotation()"
-                                    class="px-4 py-2 border-black text-black rounded hover:bg-blue-700">
-                                Simpan
-                            </button>
+                            <div class="flex justify-between">
+                                <button onclick="saveAnnotation()"
+                                    class="px-4 py-2 bg-[#6C88A4] text-white rounded hover:bg-[#2C3E50] hover:text-white">
+                                    Simpan
+                                </button>
+                                <button type="cancel"
+                                    class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-600">
+                                    Batal
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -121,9 +119,9 @@
                 jenis_surat: "#00bcd4"
             };
     
-            let textNodes = []; // Peta node teks dan offset globalnya di plainTextContent
-            let plainTextContent = ''; // Konten teks OCR tanpa highlight
-            let ocrContentDiv = null; // Referensi global ke div konten OCR
+            let textNodes = []; 
+            let plainTextContent = '';
+            let ocrContentDiv = null; 
     
             // Fungsi utilitas untuk meng-escape karakter regex
             function escapeRegExp(string) {
@@ -168,8 +166,6 @@
     
     
             // Inisialisasi/inisialisasi ulang textNodes dan plainTextContent
-            // Fungsi ini HARUS selalu dipanggil sebelum membaca posisi teks
-            // atau sebelum menerapkan highlight, karena ia membersihkan DOM.
             function initTextNodes(initialOcrHtml = null) {
                 if (!ocrContentDiv) {
                     console.error("[initTextNodes] ocrContentDiv is not set.");
@@ -177,8 +173,6 @@
                 }
     
                 // Langkah 1: Reset DOM ocrContentDiv ke konten OCR MURNI
-                // Ini CRITICAL: Memastikan DOM sama persis dengan plainTextContent yang baru dihitung
-                // dan semua <mark> tags dari sesi sebelumnya dihapus.
                 if (initialOcrHtml) {
                     ocrContentDiv.innerHTML = initialOcrHtml;
                 } else {
@@ -197,7 +191,7 @@
                 const walker = document.createTreeWalker(
                     ocrContentDiv,
                     NodeFilter.SHOW_TEXT,
-                    null // Terima semua node teks di DOM yang bersih
+                    null 
                 );
     
                 while (walker.nextNode()) {
@@ -214,7 +208,6 @@
             // Fungsi untuk menemukan semua kecocokan teks (digunakan oleh renderHighlights)
             function findMatches(textToFind) {
                 if (!plainTextContent || !textToFind) {
-                    // console.warn("plainTextContent or textToFind is empty. Cannot find matches.");
                     return [];
                 }
                 const safeText = escapeRegExp(textToFind);
@@ -223,7 +216,6 @@
     
                 let match;
                 while ((match = regex.exec(plainTextContent)) !== null) {
-                    // console.log('match:', match);
                     matches.push({
                         start: match.index,
                         length: match[0].length
@@ -233,7 +225,6 @@
             }
     
             // Fungsi untuk membungkus teks dengan tag <mark> pada posisi tertentu
-            // Ini memodifikasi DOM
             function wrapTextByPosition(textToHighlight, start, length, type) {
                 if (!ocrContentDiv || !textToHighlight || typeof start === 'undefined' || typeof length === 'undefined' || !type) {
                     console.error("[wrapTextByPosition] Invalid arguments. Skipping.");
@@ -255,8 +246,6 @@
                     const nodeEnd = info.offset + info.node.nodeValue.length;
     
                     // Cek apakah rentang highlight sepenuhnya berada di dalam node teks ini
-                    // Penting: start < nodeEnd memastikan start berada di dalam node
-                    // dan (start + length) <= nodeEnd memastikan highlight tidak keluar dari node
                     if (start >= nodeStart && start < nodeEnd && (start + length) <= nodeEnd) {
                         const range = document.createRange();
                         range.setStart(info.node, start - nodeStart);
@@ -270,17 +259,17 @@
     
                         const mark = document.createElement("mark");
                         mark.setAttribute("data-type", type);
-                        mark.style.backgroundColor = typeColors[type] || "#ccc"; // Fallback color
-                        mark.textContent = textToHighlight; // Memastikan teks yang ditandai sesuai
+                        mark.style.backgroundColor = typeColors[type] || "#ccc"; 
+                        mark.textContent = textToHighlight; 
     
                         try {
-                            range.deleteContents(); // Hapus teks asli dari range
-                            range.insertNode(mark); // Sisipkan mark baru
+                            range.deleteContents(); 
+                            range.insertNode(mark); 
                             console.log(`[wrapTextByPosition] Wrapped "${textToHighlight}" (type: ${type}) at start ${start}.`);
                         } catch (e) {
                             console.error(`[wrapTextByPosition] Error inserting node for "${textToHighlight}" (type: ${type}) at start ${start}:`, e);
                         }
-                        return; // Berhasil membungkus, keluar dari loop
+                        return; 
                     }
                 }
                 console.warn(`[wrapTextByPosition] Could not wrap text "${textToHighlight}" (type: ${type}) at start ${start} length ${length}. Node not found or range invalid within textNodes map.`);
@@ -299,13 +288,12 @@
                 const originalOcrHtml = alpineDataScope.ocr;
     
                 // 2. SELALU bersihkan DOM dan bangun ulang textNodes dari konten OCR asli
-                initTextNodes(originalOcrHtml); // Ini akan mereset innerHTML dan membangun plainTextContent & textNodes
+                initTextNodes(originalOcrHtml); 
     
                 const annotationsObject = alpineDataScope.annotations || {};
                 console.log('[renderHighlights] Annotations to render:', annotationsObject);
     
                 // 3. Ubah annotations menjadi array dan urutkan berdasarkan posisi 'start' secara DESCENDING
-                // Ini KRITIS untuk menghindari masalah offset saat menyisipkan elemen
                 const sortedAnnotations = Object.entries(annotationsObject)
                     .map(([key, data]) => ({ key, ...data }))
                     .filter(a => typeof a.start === 'number' && typeof a.length === 'number' && typeof a.text === 'string' && a.text.length > 0)
@@ -339,7 +327,6 @@
                     return;
                 }
     
-                // CRITICAL: Bersihkan DOM dan inisialisasi ulang textNodes SEBELUM mendapatkan offsets
                 // Ini memastikan perhitungan offset berdasarkan DOM yang bersih.
                 initTextNodes();
     
@@ -372,7 +359,7 @@
     
                 // Dispatch update ke Livewire. Alpine watcher akan memicu renderHighlights.
                 alpineDataScope.dispatchUpdate(
-                    ocrContentDiv.textContent, // Konten OCR yang saat ini (mungkin sudah diedit oleh user)
+                    ocrContentDiv.textContent,
                     updatedAnnotationsObject
                 );
     
@@ -385,7 +372,9 @@
                 document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
     
                 const modalOverlay = document.createElement("div");
-                modalOverlay.className = "modal-overlay fixed z-50 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center";
+                modalOverlay.className = "modal-overlay flex items-center justify-center";
+
+                console.log('sampai sini');
     
                 const template = document.getElementById("annotation-modal");
                 const modalContent = template.content.cloneNode(true);
@@ -401,14 +390,13 @@
     
             // Event listener DOMContentLoaded untuk inisialisasi awal
             document.addEventListener("DOMContentLoaded", () => {
-                ocrContentDiv = document.getElementById("ocr-content"); // Inisialisasi referensi global
+                ocrContentDiv = document.getElementById("ocr-content"); 
                 if (!ocrContentDiv) {
                     console.error("Editable div #ocr-content not found on DOMContentLoaded.");
                     return;
                 }
     
                 // Inisialisasi awal plainTextContent dan textNodes.
-                // Ini akan dipanggil lagi oleh renderHighlights, tapi penting untuk setup awal.
                 initTextNodes();
     
                 ocrContentDiv.addEventListener("mouseup", () => {
@@ -430,28 +418,7 @@
                         showModalAtPosition(range);
                     }
                 });
-    
-                // Event listener untuk menghapus highlight saat diklik
-                ocrContentDiv.addEventListener('click', (event) => {
-                    if (event.target.tagName === 'MARK') {
-                        const mark = event.target;
-                        const dataType = mark.getAttribute('data-type');
-                        if (confirm(`Hapus highlight untuk "${dataType}"?`)) {
-                            // Hapus mark dari DOM
-                            mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
-    
-                            const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
-                            let updatedAnnotationsObject = { ...alpineDataScope.annotations };
-                            delete updatedAnnotationsObject[dataType]; // Hapus annotation dari objek
-                            alpineDataScope.dispatchUpdate(
-                                ocrContentDiv.textContent, // Kirim teks yang sudah diubah jika user mengedit
-                                updatedAnnotationsObject
-                            );
-                            // renderHighlights() akan terpanggil oleh watcher annotations
-                            // initTextNodes() akan terpanggil di awal renderHighlights()
-                        }
-                    }
-                });
+
             });
         </script>
     @endpush
