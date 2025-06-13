@@ -80,7 +80,7 @@ class ReviewOCR extends Page
         $this->selectedDocumentIndexForViewer = $documentToLoad->document_index;
 
         $this->ocr = $documentToLoad->ocr_text ?? '';
-        $this->annotations = json_decode($documentToLoad->extracted_fields ?? '[]', true);
+        $this->annotations = $documentToLoad->extracted_fields ?? '[]';
 
         $this->dispatch('ocr-loaded', [
             'ocr' => $this->ocr,
@@ -210,12 +210,39 @@ class ReviewOCR extends Page
     #[On('data-ready')]
     public function updateDocumentOcrAndAnnotations(int $documentIndex, string $ocr_final, array $annotations_final): void
     {
+        \Log::info('Livewire: updateDocumentOcrAndAnnotations received', [
+            'documentIndex' => $documentIndex,
+            'finalOcr' => substr($ocr_final, 0, 50) . '...',
+            'finalAnnotations' => $annotations_final,
+        ]);
+
+        // Temukan model yang sesuai di collection foundLetters
+        // Pastikan 'document_index' adalah atribut yang unik untuk menemukan dokumen yang benar
         $suratToUpdate = $this->foundLetters->firstWhere('document_index', $documentIndex);
+
         if ($suratToUpdate) {
+            // Perbarui properti model
             $suratToUpdate->ocr_text = $ocr_final;
             $suratToUpdate->extracted_fields = $annotations_final;
-            Notification::make()->title('Perubahan untuk Dokumen ' . $documentIndex . ' disiapkan.')->success()->send();
+
+            // --- KUNCI PERBAIKAN: Panggil metode save() untuk menyimpan perubahan ke database ---
+            try {
+                $suratToUpdate->save(); // <--- INI ADALAH BARIS YANG HILANG!
+                \Log::info('Livewire: Document saved to database.', ['id' => $suratToUpdate->_id]);
+
+                // Perbarui properti publik Livewire agar UI sinkron dengan data yang baru disimpan
+                // Ini penting agar Alpine watcher annotations tetap berfungsi dan UI sinkron
+                $this->ocr = $ocr_final;
+                $this->annotations = $annotations_final; // Perbarui properti ini agar Alpine dan Livewire sinkron
+
+                Notification::make()->title('Perubahan untuk Dokumen ' . ($documentIndex + 1) . ' berhasil disimpan!')->success()->send(); // +1 untuk display yang lebih user-friendly
+            } catch (\Exception $e) {
+                \Log::error('Livewire: Error saving document to database.', ['error' => $e->getMessage(), 'id' => $suratToUpdate->_id]);
+                Notification::make()->title('Gagal menyimpan dokumen: ' . $e->getMessage())->danger()->send();
+            }
+
         } else {
+             \Log::warning('Livewire: Failed to find document for update.', ['documentIndex' => $documentIndex]);
              Notification::make()->title('Gagal menemukan dokumen untuk diperbarui.')->danger()->send();
         }
     }

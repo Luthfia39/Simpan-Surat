@@ -1,12 +1,5 @@
 <x-filament-panels::page>
     <x-filament::section>
-        <x-slot name="heading">
-            {{ $this->getHeading() }}
-        </x-slot>
-
-        <x-slot name="description">
-            {{ $this->getSubheading() }}
-        </x-slot>
     
         <div>
             {{ $this->wizardForm }}
@@ -38,17 +31,18 @@
                                 });
                             }
                         });
-    
+
                         this.$watch('annotations', (newAnnotations) => {
                             console.log('Annotations property changed in Alpine! Re-rendering highlights.');
                             this.$nextTick(() => {
                                 renderHighlights();
                             });
                         }, { deep: true }); // Watch deeply for changes within the object
-    
+
                         this.$wire.on('ocr-loaded', ({ ocr, extracted_fields }) => {
                             console.log('Livewire ocr-loaded event received for viewer. Updating OCR and annotations.');
                             this.annotations = extracted_fields; // Update annotations
+                            this.ocr = ocr; // Update ocr. Ini akan memicu watcher 'ocr' dan renderHighlights.
                         });
     
                         // Panggil saat inisialisasi awal jika OCR sudah ada
@@ -79,7 +73,7 @@
                                 <option value="">-- Pilih Jenis --</option>
                                 <option value="nomor_surat">Nomor Surat</option>
                                 <option value="isi_surat">Isi Surat</option>
-                                <option value="penanda_tangan">Penanda Tangan</option>
+                                <option value="ttd_surat">Penanda Tangan</option>
                                 <option value="tanggal">Tanggal</option>
                             </select>
                             <div class="flex justify-between">
@@ -87,7 +81,7 @@
                                     class="px-4 py-2 bg-[#6C88A4] text-white rounded hover:bg-[#2C3E50] hover:text-white">
                                     Simpan
                                 </button>
-                                <button type="cancel"
+                                <button onclick="closeAnnotationModal()"
                                     class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-600">
                                     Batal
                                 </button>
@@ -107,16 +101,8 @@
             const typeColors = {
                 nomor_surat: "#ffeb3b",
                 isi_surat: "#4caf50",
-                penanda_tangan: "#2196f3",
-                tanggal: "#f57c00",
-                nama_ortu: "#9c27b0",
-                pekerjaan: "#795548",
-                nip: "#607d8b",
-                pangkat: "#009688",
-                instansi: "#8bc34a",
-                thn_akademik: "#ff9800",
-                keterangan_surat: "#e91e63",
-                jenis_surat: "#00bcd4"
+                ttd_surat: "#2196f3",
+                tanggal: "#f57c00"
             };
     
             let textNodes = []; 
@@ -202,7 +188,6 @@
                     });
                     accumulatedLength += node.nodeValue.length;
                 }
-                console.log('[initTextNodes] Completed. plainTextContent length:', plainTextContent.length, 'textNodes count:', textNodes.length);
             }
     
             // Fungsi untuk menemukan semua kecocokan teks (digunakan oleh renderHighlights)
@@ -277,7 +262,6 @@
     
             // Fungsi untuk merender semua highlight dari data annotations
             function renderHighlights() {
-                console.log('[renderHighlights] called.');
                 if (!ocrContentDiv) {
                     console.error("[renderHighlights] ocrContentDiv not set. Skipping.");
                     return;
@@ -310,13 +294,15 @@
                         annotation.key
                     );
                 });
-                console.log('[renderHighlights] Highlighting process finished.');
             }
     
             // Fungsi untuk menyimpan anotasi baru setelah seleksi
-            window.saveAnnotation = function() {
+            function saveAnnotation () {
                 const selectedType = document.getElementById("type-dropdown").value;
                 const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+
+                console.log('[saveAnnotation] Selection:', selection);
     
                 if (!selectedType || !selection || selection.rangeCount === 0 || selection.isCollapsed) {
                     alert("Silakan pilih jenis anotasi dan pastikan ada teks yang terpilih.");
@@ -337,11 +323,15 @@
                     document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
                     return;
                 }
+
+                console.log('disini');
     
                 const { start: startIndex, length: selectedLength } = globalOffsets;
-                const selectedText = selection.toString().trim();
+
+                console.log('[saveAnnotation] Selected text:', selectedText);
     
                 if (!selectedText) {
+                    console.log('nggak ada')
                     document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
                     return;
                 }
@@ -366,6 +356,10 @@
                 document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
                 currentSelection = null;
             };
+
+            function closeAnnotationModal() {
+                document.querySelectorAll(".modal-overlay").forEach(el => el.remove());
+            }
     
             // Fungsi untuk menampilkan modal pemilihan jenis anotasi
             window.showModalAtPosition = function(range) {
