@@ -71,44 +71,32 @@ class SuratKeluarResource extends Resource
                         return Major::getNameByCode($prodiCode) ?? $prodiCode ?? '-';
                     })
                     ->sortable()
-                    // ->searchable(
-                    //     isIndividual: true,
-                    //     callback: fn (Builder $query, string $search) => 
-                    //         $query->where('metadata.prodi', 'regex', new \MongoDB\BSON\Regex($search, 'i'))
-                    // )
-                    // ->searchable(
-                    //     isIndividual: true,
-                    //     callback: function (Builder $query, string $search) {
-                    //         $query->where('metadata.prodi', 'regex', new \MongoDB\BSON\Regex($search, 'i'));
-                    //     }
-                    // ),
+                    ->searchable(),
             ])
             ->filters([
-                // SelectFilter::make('Prodi')
-                //     ->options(Major::toArray())
-                //     ->modifyQueryUsing(function (Builder $query, array $state)
-                //         {
-                //             if (!empty($state['value'])) {
-                                // $a = json_decode(SuratKeluar::all()->toJson(), true);
-                                // dd($a);
-                                // dd(SuratKeluar::where('metadata.prodi', 'TRI')->get());
-                            // }
-                            // return $query->where('metadata.prodi', $state['value']);
-                            // dd($state);
-                            // return $state ? dd($state) : $query;
-                            // return $state ? $query->where(['metadata.prodi'], $state['value']) : $query;
-                    //     }
-                    // ),
+                Tables\Filters\SelectFilter::make('prodi')
+                    ->label('Program Studi')
+                    ->options(
+                        array_merge(
+                            ['' => 'Semua Program Studi'],
+                            array_filter(Major::toArray(), function($value, $key) {
+                                return $key !== null && $key !== '' && $value !== null && $value !== '';
+                            }, ARRAY_FILTER_USE_BOTH)
+                        )
+                    )
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (isset($data['value']) && !empty($data['value'])) {
+                            $filterValue = trim($data['value']);
+                            $query->where('metadata', 'regex', '/(?i).*"prodi":"' . preg_quote($filterValue, '/') . '".*/');
+                        }
+                        return $query;
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
-            ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
-            ])
+            ->bulkActions([ ])
             ->defaultSort('created_at', 'desc');
     }
 

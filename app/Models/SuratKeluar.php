@@ -26,14 +26,10 @@ class SuratKeluar extends Model
         'metadata'
     ];
 
-    protected function casts(): array
-    {
-        return 
-        [
-            'metadata' => 'array', 
-            'pdf_url' => 'string', 
-        ];
-    }
+    protected $casts = [
+        'metadata' => 'array', 
+        'pdf_url' => 'string', 
+    ];
 
     /**
      * Get the prodi that owns the SuratKeluar
