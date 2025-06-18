@@ -70,13 +70,17 @@
                             const ocrContentDivEl = document.getElementById('ocr-content');
                             if (ocrContentDivEl) {
                                 ocrContentDivEl.addEventListener('input', () => {
-                                    console.log('OCR content changed in Alpine!');
-                                    
-                                    // Ambil innerHTML, bersihkan semua tag <mark>, lalu update Alpine 'ocr'
+                                    console.log('OCR content changed in Alpine! Recalculating annotation offsets...');
+
+                                    // 1. Dapatkan teks lama sebelum perubahan (sebelum this.ocr diupdate)
+                                    // Asumsi: 'this.ocr' di Alpine saat ini adalah teks yang *sebelum* perubahan input
+                                    // Atau, jika Anda ingin lebih akurat, simpan 'plainTextContent' sebelumnya
+                                    const oldPlainTextContent = plainTextContent; // plainTextContent sudah diupdate di initTextNodes() terakhir
+
+                                    // Ambil innerHTML yang baru, bersihkan mark tags, dan update Alpine 'ocr'
                                     const tempDiv = document.createElement('div');
                                     tempDiv.innerHTML = ocrContentDivEl.innerHTML;
                                     tempDiv.querySelectorAll('mark').forEach(mark => {
-                                        // Ganti tag <mark> dengan konten teksnya
                                         mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
                                     });
                                     // Update property ocr di Alpine, ini akan memicu watcher 'ocr' dan renderHighlights
