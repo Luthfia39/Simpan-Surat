@@ -10,6 +10,8 @@
                     ocr: @entangle('ocr'),
                     annotations: @entangle('annotations'),
                     currentDocumentIndexInViewer: @entangle('selectedDocumentIndexForViewer'),
+                    isSaving: false,
+
                     // Method untuk mengirim update ke Livewire
                     dispatchUpdate: function(finalOcr, finalAnnotations) {
                         console.log('Dispatching update for document index:', this.currentDocumentIndexInViewer);
@@ -49,6 +51,17 @@
                             // Asalkan watcher 'ocr' memicu renderHighlights yang akan membaca kedua state ini.
                             this.annotations = extracted_fields;
                             this.ocr = ocr; 
+                            this.isSaving = false;
+                        });
+
+                        // *** PERUBAHAN KRUSIAL: Listener untuk event dari Livewire setelah penyimpanan selesai ***
+                        this.$wire.on('document-update-completed', () => {
+                            console.log('Livewire: document-update-completed event received. Starting delayed highlight render.');
+                            this.isSaving = false; // Sembunyikan indikator loading
+                            setTimeout(() => {
+                                renderHighlights();
+                                console.log('Delayed renderHighlights finished.');
+                            }, 500); // Tunda 500 milidetik (0.5 detik). Sesuaikan nilainya.
                         });
                     
                         // Tambahkan event listener untuk input di ocrContentDiv di dalam Alpine init
@@ -57,7 +70,8 @@
                             const ocrContentDivEl = document.getElementById('ocr-content');
                             if (ocrContentDivEl) {
                                 ocrContentDivEl.addEventListener('input', () => {
-                                    // *** INI ADALAH MODIFIKASI KRUSIAL ***
+                                    console.log('OCR content changed in Alpine!');
+                                    
                                     // Ambil innerHTML, bersihkan semua tag <mark>, lalu update Alpine 'ocr'
                                     const tempDiv = document.createElement('div');
                                     tempDiv.innerHTML = ocrContentDivEl.innerHTML;
@@ -69,7 +83,8 @@
                                     this.ocr = tempDiv.innerHTML;
                                     // Karena ocr property di-entangle, ini otomatis mengirim ke Livewire
                                     // Tidak perlu lagi final-ocr-input hidden field terpisah
-                                    // this.dispatchUpdate(tempDiv.innerHTML, this.annotations); // Tidak perlu dispatchUpdate di sini, entangle sudah cukup
+                                    $wire.updateDocumentOcrAndAnnotations(this.currentDocumentIndexInViewer, tempDiv.innerHTML, this.annotations); 
+                                    
                                 });
 
                                 // Panggil renderHighlights saat inisialisasi Alpine
@@ -84,6 +99,12 @@
                 }"
                 class="border border-gray-300 p-4 rounded-lg bg-white overflow-auto max-h-96"
             >
+            
+                <div x-show="isSaving" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                    <span class="ml-2 text-gray-700">Menyimpan perubahan...</span>
+                </div>
+
                 <div
                     id="ocr-content"
                     contenteditable="true"
@@ -146,6 +167,8 @@
     
             // Fungsi untuk mendapatkan posisi awal dan panjang seleksi secara global
             function getSelectionGlobalOffsets(globalStart, selectedText, container, cleanPlainText) {
+                
+                console.log('[getSelectionGlobalOffsets] Global Start:', globalStart);
                 const globalLength = selectedText.length;
     
                 const expectedText = cleanPlainText.substring(globalStart, globalStart + globalLength);
@@ -460,7 +483,7 @@
                     const selection = window.getSelection();
                     if (selection.rangeCount > 0 && !selection.isCollapsed) {
                         const range = selection.getRangeAt(0);
-                        console.log("Selection Range:", range);
+                        console.log("Selection Range:", range.startContainer, range.startOffset, range.endContainer, range.endOffset);
                         const parentMark = range.commonAncestorContainer.closest?.("mark");
     
                         // Kita tetap tampilkan modal, tapi beri peringatan jika ada highlight
@@ -479,28 +502,28 @@
                 });
 
                 // Event listener untuk menghapus highlight saat diklik
-                ocrContentDiv.addEventListener('click', (event) => {
-                    if (event.target.tagName === 'MARK') {
-                        const mark = event.target;
-                        const dataType = mark.getAttribute('data-type');
-                        if (confirm(`Hapus highlight untuk "${dataType}"?`)) {
-                            const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
-                            let updatedAnnotationsObject = { ...alpineDataScope.annotations };
-                            delete updatedAnnotationsObject[dataType];
+                // ocrContentDiv.addEventListener('click', (event) => {
+                //     if (event.target.tagName === 'MARK') {
+                //         const mark = event.target;
+                //         const dataType = mark.getAttribute('data-type');
+                //         if (confirm(`Hapus highlight untuk "${dataType}"?`)) {
+                //             const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
+                //             let updatedAnnotationsObject = { ...alpineDataScope.annotations };
+                //             delete updatedAnnotationsObject[dataType];
 
-                            console.log(`[Click MARK] Deleting annotation for type: ${dataType}. Updated annotations:`, updatedAnnotationsObject);
+                //             console.log(`[Click MARK] Deleting annotation for type: ${dataType}. Updated annotations:`, updatedAnnotationsObject);
                             
-                            // Perbarui annotations di Alpine, watcher akan memicu renderHighlights
-                            alpineDataScope.annotations = updatedAnnotationsObject;
+                //             // Perbarui annotations di Alpine, watcher akan memicu renderHighlights
+                //             alpineDataScope.annotations = updatedAnnotationsObject;
 
-                            // Dispatch update ke Livewire
-                            alpineDataScope.dispatchUpdate(
-                                ocrContentDiv.textContent, // Menggunakan textContent yang bersih
-                                updatedAnnotationsObject
-                            );
-                        }
-                    }
-                });
+                //             // Dispatch update ke Livewire
+                //             alpineDataScope.dispatchUpdate(
+                //                 ocrContentDiv.textContent, // Menggunakan textContent yang bersih
+                //                 updatedAnnotationsObject
+                //             );
+                //         }
+                //     }
+                // });
             });
         </script>
     @endpush

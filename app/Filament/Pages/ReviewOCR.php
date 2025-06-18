@@ -212,7 +212,7 @@ class ReviewOCR extends Page
     {
         \Log::info('Livewire: updateDocumentOcrAndAnnotations received', [
             'documentIndex' => $documentIndex,
-            'finalOcr' => substr($ocr_final, 0, 50) . '...',
+            'finalOcr' => $ocr_final,
             'finalAnnotations' => $annotations_final,
         ]);
 
@@ -227,7 +227,7 @@ class ReviewOCR extends Page
 
             // --- KUNCI PERBAIKAN: Panggil metode save() untuk menyimpan perubahan ke database ---
             try {
-                $suratToUpdate->save(); // <--- INI ADALAH BARIS YANG HILANG!
+                $suratToUpdate->save(); 
                 \Log::info('Livewire: Document saved to database.', ['id' => $suratToUpdate->_id]);
 
                 // Perbarui properti publik Livewire agar UI sinkron dengan data yang baru disimpan
@@ -235,6 +235,7 @@ class ReviewOCR extends Page
                 $this->ocr = $ocr_final;
                 $this->annotations = $annotations_final; // Perbarui properti ini agar Alpine dan Livewire sinkron
 
+                $this->dispatch('document-update-completed');
                 Notification::make()->title('Perubahan untuk Dokumen ' . ($documentIndex + 1) . ' berhasil disimpan!')->success()->send(); // +1 untuk display yang lebih user-friendly
             } catch (\Exception $e) {
                 \Log::error('Livewire: Error saving document to database.', ['error' => $e->getMessage(), 'id' => $suratToUpdate->_id]);
