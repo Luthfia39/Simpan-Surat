@@ -210,6 +210,7 @@
             }
     
             // Fungsi untuk membungkus teks dengan tag <mark> pada posisi tertentu
+            // Fungsi untuk membungkus teks dengan tag <mark> pada posisi tertentu
             function wrapTextByPosition(textToHighlight, start, length, type) {
                 if (!ocrContentDiv || !textToHighlight || typeof start === 'undefined' || typeof length === 'undefined' || !type) {
                     console.error("[wrapTextByPosition] Invalid arguments. Skipping.");
@@ -219,45 +220,91 @@
                     console.error(`[wrapTextByPosition] Invalid range: start=${start}, length=${length}. plainTextContent length: ${plainTextContent.length}. Skipping.`);
                     return;
                 }
-                const segment = plainTextContent.substring(start, start + length);
-                if (segment !== textToHighlight) {
-                    console.warn(`[wrapTextByPosition] Text mismatch at calculated position. Expected "${textToHighlight}", found "${segment}". Attempting to proceed but might be inaccurate.`);
-                }
-    
-                for (const info of textNodes) {
-                    const nodeStart = info.offset;
-                    const nodeEnd = info.offset + info.node.nodeValue.length;
-    
-                    if (start >= nodeStart && (start + length) <= nodeEnd) {
-                        console.log('lewat ini')
-                        const range = document.createRange();
-                        range.setStart(info.node, start - nodeStart);
-                        range.setEnd(info.node, start - nodeStart + length);
-    
-                        // Hindari menyoroti bagian yang sudah ditandai, jika ada
-                        // JIKA initTextNodes sudah selalu membersihkan, ini mungkin tidak akan terpicu
-                        // tapi tetap sebagai safeguard
-                        if (range.commonAncestorContainer.closest && range.commonAncestorContainer.closest('mark')) {
-                            console.warn("[wrapTextByPosition] Skipping highlight: part already marked.");
-                            return;
+
+                // --- Logika yang Lebih Robust untuk Mencari Range ---
+                // Kita perlu menemukan titik awal dan akhir Range dalam struktur DOM asli,
+                // bukan hanya dari peta textNodes yang mungkin memiliki "celah".
+
+                let charIndex = 0; // Melacak indeks karakter absolut di DOM
+                let rangeStartFound = false;
+                let rangeEndFound = false;
+                let rangeToHighlight = document.createRange(); // Range yang akan kita gunakan
+
+                // Mendapatkan semua node di dalam ocrContentDiv (termasuk non-teks)
+                const walker = document.createTreeWalker(
+                    ocrContentDiv,
+                    NodeFilter.SHOW_ALL, // SHOW_ALL untuk melihat semua node, bukan hanya TEXT
+                    null
+                );
+
+                let currentNode;
+                while ((currentNode = walker.nextNode())) {
+                    if (currentNode.nodeType === Node.TEXT_NODE) {
+                        const nodeLength = currentNode.nodeValue.length;
+
+                        // Cek jika start highlight berada di node ini
+                        if (!rangeStartFound && start >= charIndex && start <= (charIndex + nodeLength)) {
+                            rangeToHighlight.setStart(currentNode, start - charIndex);
+                            rangeStartFound = true;
                         }
-    
-                        const mark = document.createElement("mark");
-                        mark.setAttribute("data-type", type);
-                        mark.style.backgroundColor = typeColors[type] || "#ccc"; 
-                        mark.textContent = textToHighlight; 
-    
-                        try {
-                            range.deleteContents(); 
-                            range.insertNode(mark); 
-                            console.log(`[wrapTextByPosition] Wrapped "${textToHighlight}" (type: ${type}) at start ${start}.`);
-                        } catch (e) {
-                            console.error(`[wrapTextByPosition] Error inserting node for "${textToHighlight}" (type: ${type}) at start ${start}:`, e);
+
+                        // Cek jika end highlight berada di node ini
+                        if (rangeStartFound && (start + length) >= charIndex && (start + length) <= (charIndex + nodeLength)) {
+                            rangeToHighlight.setEnd(currentNode, (start + length) - charIndex);
+                            rangeEndFound = true;
                         }
-                        return; 
+                        
+                        charIndex += nodeLength; // Tambahkan panjang teks ke indeks karakter
+                    } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
+                        // Tangani elemen yang mungkin memengaruhi offset teks, seperti <br> atau spasi tambahan
+                        // Ini bisa menjadi sumber utama inkonsistensi antara plainTextContent dan DOM visual
+                        if (currentNode.tagName === 'BR') {
+                            charIndex += 1; // Untuk <br>, anggap itu sebagai 1 karakter newline di plainTextContent
+                        } else if (currentNode.tagName === 'P' || currentNode.tagName === 'DIV') {
+                            // Untuk tag block, bisa jadi ada 1 atau 2 newlines yang tidak ada di textContent
+                            // Ini sangat tergantung pada bagaimana plainTextContent dihitung.
+                            // Jika plainTextContent dibuat dari textContent, maka ini mungkin sudah tertangani.
+                        }
+                        // Penting: Jika ada elemen yang menyisipkan spasi atau karakter, itu harus disinkronkan dengan plainTextContent
                     }
-                }t
-                console.warn(`[wrapTextByPosition] Could not wrap text "${textToHighlight}" (type: ${type}) at start ${start} length ${length}. Node not found or range invalid within textNodes map.`);
+
+                    if (rangeStartFound && rangeEndFound) {
+                        break; // Kedua titik ditemukan, keluar dari loop
+                    }
+                }
+
+                if (!rangeStartFound || !rangeEndFound) {
+                    console.warn(`[wrapTextByPosition] FINAL FAIL: Could not determine full range for Text: "${textToHighlight}", start: ${start}, length: ${length}. Range might span complex DOM.`);
+                    return; // Tidak dapat menemukan titik awal atau akhir yang valid dalam DOM
+                }
+
+                try {
+                    // --- Optional Guard (Jika Anda ingin mencegah penumpukan visual) ---
+                    // Namun, jika initTextNodes() sudah memastikan DOM selalu bersih, ini tidak diperlukan.
+                    // Jika Anda tetap melihat masalah tumpukan, ini bisa menjadi penyebab.
+                    if (rangeToHighlight.commonAncestorContainer.closest && rangeToHighlight.commonAncestorContainer.closest('mark')) {
+                        console.warn("[wrapTextByPosition] Skipping highlight: part already marked or inside an existing mark (this should not happen if DOM is perfectly clean).");
+                        // return; // Hapus return jika Anda ingin tetap memaksa highlight (dan mungkin menimpa)
+                    }
+                    // --- End Optional Guard ---
+
+                    const mark = document.createElement("mark");
+                    mark.setAttribute("data-type", type);
+                    mark.style.backgroundColor = typeColors[type] || "#ccc"; 
+
+                    rangeToHighlight.surroundContents(mark); 
+
+                    console.log(`[wrapTextByPosition] Wrapped "${textToHighlight}" (type: ${type}) at start ${start}.`);
+                } catch (e) {
+                    console.error(`[wrapTextByPosition] Error wrapping text "${textToHighlight}" (type: ${type}) at start ${start}:`, e);
+                    console.error("DOM Exception Name:", e.name, "Message:", e.message);
+                    console.error("Range info at error:", { 
+                        startNode: rangeToHighlight.startContainer, 
+                        startOffset: rangeToHighlight.startOffset, 
+                        endNode: rangeToHighlight.endContainer, 
+                        endOffset: rangeToHighlight.endOffset 
+                    });
+                }
             }
     
             // Fungsi untuk merender semua highlight dari data annotations
