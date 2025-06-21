@@ -9,12 +9,12 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Poll;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Http\UploadedFile;
 
 use App\Filament\Pages\ReviewOCR;
 
@@ -47,20 +47,36 @@ class CreateSuratMasuk extends CreateRecord
     public function mount(): void
     {
         parent::mount();
-        $this->form->fill();
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                FileUpload::make('file_path')
+                    ->label('Unggah File Surat')
+                    ->acceptedFileTypes(['application/pdf'])
+                    ->required()
+                    ->storeFiles(false)
+                    ->maxFiles(1)
+                    ->columnSpan(2)
+                    ->helperText('Format file harus berupa file PDF'),
+            ])
+            ->model(new Surat())
+            ->statePath('data');
     }
     
-    protected function submit(): array
+    protected function submit(): void
     {
         $data = $this->form->getState();
 
         // Validasi file
-        if (!$data['file_path']) {
-            return [
-                'status' => 'error',
-                'message' => 'File harus dipilih.',
-            ];
+        if (empty($data['file_path'])) {
+            Notification::make()->title('File harus dipilih.')->danger()->send();
+            return;
         }
+
+        $this->file_path = $data['file_path'];
 
         try {
             $this->dispatch('show-loading');
@@ -81,21 +97,14 @@ class CreateSuratMasuk extends CreateRecord
             if ($response->successful()) {
                 Log::info('Data dari Flask:', ['data' => $response->json()]);
                 $this->shouldPoll = true;
-                return [
-                    'status' => 'success',
-                    'message' => 'File sedang diproses.',
-                    // 'redirect' => route('filament.admin.resources.surat-masuks.edit', ['record' => $this->taskId]),
-                ];
+                Notification::make()->title('File sedang diproses. Mohon tunggu...')->success()->send();
             } else {
                 $this->dispatch('hide-loading');
                 Notification::make()
-                    ->title('Maaf, terjadi error saat memproses file di server.')
+                    ->title('Maaf, terjadi error saat memproses file di server OCR.')
                     ->danger()
                     ->send();
-                return [
-                    'status' => 'error',
-                    'message' => 'Maaf, terjadi error saat memproses file di server.',
-                ];
+                Log::error('Error dari Flask:', ['status' => $response->status(), 'response' => $response->body()]);
             }
         } catch (\Exception $e) {
             $this->dispatch('hide-loading');
@@ -103,10 +112,7 @@ class CreateSuratMasuk extends CreateRecord
                 ->title('Terjadi kesalahan: ' . $e->getMessage())
                 ->danger()
                 ->send();
-            return [
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-            ];
+            Log::error('Kesalahan proses OCR:', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
         }
     }
 
@@ -117,19 +123,28 @@ class CreateSuratMasuk extends CreateRecord
         // if (!$this->taskId) return;
         if (!$this->shouldPoll || !$this->taskId) return;
 
-        $surat = Surat::where('task_id', (string) $this->taskId)->first();
+        $surat = Surat::where('task_id', (string) $this->taskId)->get();
         Log::info('Surat dari MongoDB:', ['surat' => $surat, 'taskId' => $this->taskId]);
 
-        if ($surat) {
+        // Cek jika semua surat untuk taskId ini sudah ada dan memiliki ocr_text/extracted_fields
+        if ($suratRecords->isNotEmpty() && $suratRecords->every(fn ($surat) => !empty($surat->ocr_text) && !empty($surat->extracted_fields))) {
             $this->shouldPoll = false;
-            Log::info('Surat ditemukan');
+            Log::info('Semua surat untuk Task ID ditemukan dan diproses.', ['taskId' => $this->taskId, 'count' => $suratRecords->count()]);
             $this->dispatch('hide-loading');
-            $this->ocrData = json_decode($surat->ocr_text, true);
 
-            // Redirect langsung menggunakan Livewire
-            $this->redirect(
-                ReviewOCR::getUrl(['taskId' => $this->taskId])
-            );
+            // --- PENTING: Set initial review_status menjadi 'pending_review' ---
+            foreach ($suratRecords as $surat) {
+                if (empty($surat->review_status)) { // Hanya set jika belum ada status
+                    $surat->review_status = 'pending_review';
+                    $surat->saveQuietly(); // Gunakan saveQuietly untuk menghindari trigger timestamp/event lain
+                }
+            }
+            // --- AKHIR PENTING ---
+
+            // Redirect ke halaman daftar Surat Masuk Resource
+            $this->redirect(SuratMasukResource::getUrl('index')); 
+        } else {
+            Log::info('Polling: Belum semua surat untuk Task ID ditemukan atau diproses.', ['taskId' => $this->taskId, 'count_found' => $suratRecords->count()]);
         }
     }
 

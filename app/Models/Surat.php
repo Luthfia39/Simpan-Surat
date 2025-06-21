@@ -15,10 +15,12 @@ class Surat extends Model
     protected $fillable = [
         'task_id',
         'ocr_text',
+        'is_ugm',
         'letter_type',
         'document_index',
         'extracted_fields',
         'pdf_url',
+        'review_status'
     ];
 
     protected $casts = [

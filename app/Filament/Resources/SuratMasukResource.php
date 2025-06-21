@@ -22,6 +22,9 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Resources\Pages\Page;
 use Filament\Forms\Components\TextInput;
 
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Forms\Components\Select;
+
 use App\Filament\Pages\ReviewOCR;
 
 class SuratMasukResource extends Resource
@@ -32,22 +35,24 @@ class SuratMasukResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    // protected static ?string $navigationGroup = 'Surat Masuk';
-
     protected static ?string $navigationLabel = 'Surat Masuk';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                FileUpload::make('file_path')
-                ->label('Unggah File Surat')
-                ->acceptedFileTypes(['application/pdf'])
-                ->required()
-                ->storeFiles(false)
-                ->maxFiles(1)
-                ->columnSpan(2)
-                ->helperText('Format file harus berupa file PDF'),
+                Forms\Components\Hidden::make('task_id'), // Bisa ditampilkan sebagai Readonly atau Hidden
+                Forms\Components\Hidden::make('document_index'), // Bisa ditampilkan sebagai Readonly atau Hidden
+                
+                Select::make('letter_type')
+                    ->label('Jenis Surat')
+                    ->options([
+                        'Surat Pernyataan' => 'Surat Pernyataan',
+                        'Surat Keterangan' => 'Surat Keterangan',
+                        'Surat Tugas' => 'Surat Tugas',
+                        'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -55,10 +60,29 @@ class SuratMasukResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('task_id')
+                    ->label('Task ID')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                BadgeColumn::make('review_status')
+                    ->label('Status Review')
+                    ->colors([
+                        'gray' => 'pending_review',
+                        'info' => 'in_review',
+                        'success' => 'reviewed',
+                        'danger' => 'rejected',
+                    ])
+                    ->sortable()
+                    ->searchable(),
+
                 TextColumn::make('nomor_surat')
                     ->label('Nomor Surat')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        $record->extracted_fields['nomor_surat'][0] ?? null
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
+                        ? $decodedFields['nomor_surat']['text']
+                        : null
                     )
                     ->searchable()
                     ->sortable(),
@@ -79,7 +103,9 @@ class SuratMasukResource extends Resource
                 TextColumn::make('penanda_tangan')
                     ->label('Penanda Tangan')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        $record->extracted_fields['penanda_tangan'][0] ?? null
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['ttd_surat']['text']))
+                        ? $decodedFields['ttd_surat']['text']
+                        : null
                     )
                     ->default('-')
                     ->searchable(),
@@ -87,7 +113,9 @@ class SuratMasukResource extends Resource
                 TextColumn::make('pengirim')
                     ->label('Pengirim/Penerima')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        $record->extracted_fields['pengirim'][0] ?? null
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['pengirim']['text']))
+                        ? $decodedFields['pengirim']['text']
+                        : null
                     )
                     ->default('-')
                     ->searchable(),
@@ -95,7 +123,9 @@ class SuratMasukResource extends Resource
                 TextColumn::make('created_at')
                     ->label('Tanggal Dibuat')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        $record->extracted_fields['tanggal'][0] ?? null
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['tanggal']['text']))
+                        ? $decodedFields['tanggal']['text']
+                        : null
                     )
                     // ->date('d F Y') // atau ->dateTime()
                     ->sortable(),
@@ -108,6 +138,15 @@ class SuratMasukResource extends Resource
                         'Surat Keterangan' => 'Surat Keterangan',
                         'Surat Tugas' => 'Surat Tugas',
                     ]),
+                SelectFilter::make('review_status')
+                    ->label('Status Review')
+                    ->options([
+                        'pending_review' => 'Belum Direview',
+                        'in_review' => 'Sedang Direview',
+                        'reviewed' => 'Sudah Direview',
+                        'rejected' => 'Ditolak',
+                    ])
+                    // ->default('pending_review'),
             
                 // Filter::make('created_at')
                 //     ->form([
@@ -121,13 +160,15 @@ class SuratMasukResource extends Resource
                 //     ),
             ])
             ->actions([
+                Tables\Actions\EditAction::make()
+                    ->label(fn (Model $record): string => $record->review_status === 'reviewed' ? 'Lihat Detail' : 'Review OCR'),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -144,7 +185,7 @@ class SuratMasukResource extends Resource
         return [
             'index' => Pages\ListSuratMasuks::route('/'),
             'create' => Pages\CreateSuratMasuk::route('/create'),
-            'edit' => Pages\EditSuratMasuk::route('/edit/{record}'),
+            'edit' => Pages\EditSuratMasuks::route('/{record}/edit'),
             'view' => Pages\ViewSuratMasuk::route('/view/{record}'),
         ];
     }
