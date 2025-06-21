@@ -117,6 +117,9 @@ class EditSuratMasuks extends EditRecord
     {
         $this->record->ocr_text = $ocr_final;
         $this->record->extracted_fields = $annotations;
+        
+        $this->ocr= $ocr_final;
+        $this->annotations= $annotations;
         try {
             $this->record->save(); // Simpan langsung model ke DB
             \Log::info('Livewire: Document saved to database from updateDocumentOcrAndAnnotations.', ['id' => $this->record->id]);
@@ -128,8 +131,6 @@ class EditSuratMasuks extends EditRecord
             \Log::error('Livewire: Error saving document from updateDocumentOcrAndAnnotations:', ['error' => $e->getMessage(), 'id' => $this->record->id]);
             Notification::make()->title('Gagal menyimpan perubahan: ' . $e->getMessage())->danger()->send();
         }
-        // $this->ocr= $ocr_final;
-        // $this->annotations= $annotations;
         // $this->save();
     }
 

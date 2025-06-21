@@ -67,7 +67,6 @@
                         this.annotations = extracted_fields; // PHP sudah kirim sebagai array/object yang benar
                         this.ocr = ocr; 
                         this.isSaving = false; // Sembunyikan loading jika data awal dimuat
-                        // renderHighlights() akan dipicu oleh watcher 'ocr' dan 'annotations'
                     });
 
                     // Listener untuk event dari Livewire setelah penyimpanan selesai (updateData di PHP)
@@ -138,7 +137,7 @@
                         <option value="">-- Pilih Jenis --</option>
                         <option value="nomor_surat">Nomor Surat</option>
                         <option value="isi_surat">Isi Surat</option>
-                        <option value="penanda_tangan">Penanda Tangan</option>
+                        <option value="ttd_surat">Penanda Tangan</option>
                         <option value="tanggal">Tanggal</option>
                     </select>
                     <button onclick="saveAnnotation()"
@@ -443,7 +442,6 @@
     
                 closeAnnotationModal();
                 // currentSelection = null; // Reset seleksi
-                renderHighlights();
             };
 
             function closeAnnotationModal() {
