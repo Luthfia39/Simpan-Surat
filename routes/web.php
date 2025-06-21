@@ -81,10 +81,12 @@ Route::middleware('api')->prefix('api')->group(function () {
                     Surat::create([
                         'task_id' => $taskId, 
                         'pdf_url' => $pdfUrl, 
+                        'is_ugm' => $document['is_ugm'],
                         'document_index' => $documentIndex, 
                         'letter_type' => $document['letter_type'],
                         'ocr_text' => $document['ocr_text'],
                         'extracted_fields' => json_encode($document['extracted_fields']),
+                        'review_status' => 'pending_review'
                     ]);
                 }
             } else {
