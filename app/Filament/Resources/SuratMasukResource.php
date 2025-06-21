@@ -27,6 +27,8 @@ use Filament\Forms\Components\Select;
 
 use App\Filament\Pages\ReviewOCR;
 
+use Illuminate\Support\Facades\Auth;
+
 class SuratMasukResource extends Resource
 {
     protected static ?string $model = Surat::class;
@@ -36,6 +38,18 @@ class SuratMasukResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $navigationLabel = 'Surat Masuk';
+
+    protected static ?string $navigationBadgeTooltip = 'Jumlah Surat Masuk yang Menunggu Review';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::query()->where('status', 'pending_review')->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
 
     public static function form(Form $form): Form
     {
