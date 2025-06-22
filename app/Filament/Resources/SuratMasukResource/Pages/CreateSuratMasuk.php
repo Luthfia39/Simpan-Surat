@@ -17,6 +17,7 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Http\UploadedFile;
 
 use App\Filament\Pages\ReviewOCR;
+use Illuminate\Support\HtmlString;
 
 class CreateSuratMasuk extends CreateRecord
 {
@@ -60,7 +61,7 @@ class CreateSuratMasuk extends CreateRecord
                     ->storeFiles(false)
                     ->maxFiles(1)
                     ->columnSpan(2)
-                    ->helperText('Format file harus berupa file PDF'),
+                    ->helperText(new HtmlString('Unggah <b>satu</b> surat resmi <b>berformat UGM</b> dengan tipe <b>file PDF</b>.')),
             ])
             ->model(new Surat())
             ->statePath('data');
@@ -91,7 +92,7 @@ class CreateSuratMasuk extends CreateRecord
             $pdfUrl = asset('storage/' . $filePath);
 
             $response = Http::withBody(json_encode(['task_id' => $this->taskId, 'pdf_url' => $pdfUrl]), 'application/json')
-                ->post('http://172.20.1.34:3000/submit_pdf');
+                ->post('http://192.168.1.14:3000/submit_pdf');
 
             // Cek apakah respons berhasil
             if ($response->successful()) {
@@ -123,28 +124,46 @@ class CreateSuratMasuk extends CreateRecord
         // if (!$this->taskId) return;
         if (!$this->shouldPoll || !$this->taskId) return;
 
-        $surat = Surat::where('task_id', (string) $this->taskId)->get();
-        Log::info('Surat dari MongoDB:', ['surat' => $surat, 'taskId' => $this->taskId]);
+        $surats = Surat::where('task_id', (string) $this->taskId)->get();
+        Log::info('Surat dari MongoDB:', ['surat' => $surats, 'taskId' => $this->taskId]);
 
         // Cek jika semua surat untuk taskId ini sudah ada dan memiliki ocr_text/extracted_fields
-        if ($suratRecords->isNotEmpty() && $suratRecords->every(fn ($surat) => !empty($surat->ocr_text) && !empty($surat->extracted_fields))) {
+        if ($surats->isNotEmpty() && $surats->every(fn ($surat) => !empty($surat->ocr_text) && !empty($surat->extracted_fields))) {
             $this->shouldPoll = false;
-            Log::info('Semua surat untuk Task ID ditemukan dan diproses.', ['taskId' => $this->taskId, 'count' => $suratRecords->count()]);
+            Log::info('Semua surat untuk Task ID ditemukan dan diproses.', ['taskId' => $this->taskId, 'count' => $surats->count()]);
             $this->dispatch('hide-loading');
 
-            // --- PENTING: Set initial review_status menjadi 'pending_review' ---
-            foreach ($suratRecords as $surat) {
-                if (empty($surat->review_status)) { // Hanya set jika belum ada status
-                    $surat->review_status = 'pending_review';
-                    $surat->saveQuietly(); // Gunakan saveQuietly untuk menghindari trigger timestamp/event lain
+            $isUgmLetterDetected = true; 
+            foreach ($surats as $surat) {
+                if (($surat->is_ugm ?? false) === false) {
+                    $isUgmLetterDetected = false;
+                    break; 
                 }
             }
-            // --- AKHIR PENTING ---
 
-            // Redirect ke halaman daftar Surat Masuk Resource
-            $this->redirect(SuratMasukResource::getUrl('index')); 
+            if ($isUgmLetterDetected) {
+                foreach ($surats as $surat) {
+                    if (empty($surat->review_status)) { 
+                        $surat->review_status = 'pending_review';
+                        $surat->saveQuietly();
+                    }
+                }
+                Notification::make()->title('Proses OCR Selesai!')->body('Dokumen berhasil diproses dan siap di-review.')->success()->send();
+                $this->redirect(SuratMasukResource::getUrl('index')); 
+            } else {
+                // === PERUBAHAN DI SINI: Panggil dispatch untuk modal kustom ===
+                $this->dispatch('show-custom-info-modal', [
+                    'title' => 'Validasi Dokumen Gagal',
+                    'description' => 'Dokumen yang Anda unggah tidak terdeteksi sebagai surat dengan format UGM. Mohon unggah dokumen sesuai permintaan yang telah ditentukan.',
+                    'details' => 'Pastikan dokumen adalah surat resmi dengan format UGM yang jelas.', // Bisa tambah detail
+                ]);
+                // ==========================================================
+
+                Log::warning('Dokumen bukan surat UGM terdeteksi.', ['taskId' => $this->taskId]);
+                // Tidak ada redirect, tetap di halaman ini
+            }
         } else {
-            Log::info('Polling: Belum semua surat untuk Task ID ditemukan atau diproses.', ['taskId' => $this->taskId, 'count_found' => $suratRecords->count()]);
+            Log::info('Polling: Belum semua surat untuk Task ID ditemukan atau diproses.', ['taskId' => $this->taskId, 'count_found' => $surats->count()]);
         }
     }
 

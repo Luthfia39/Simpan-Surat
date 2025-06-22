@@ -81,7 +81,7 @@ Route::middleware('api')->prefix('api')->group(function () {
                     Surat::create([
                         'task_id' => $taskId, 
                         'pdf_url' => $pdfUrl, 
-                        'is_ugm' => $document['is_ugm'],
+                        'is_ugm' => $document['is_ugm_format'],
                         'document_index' => $documentIndex, 
                         'letter_type' => $document['letter_type'],
                         'ocr_text' => $document['ocr_text'],

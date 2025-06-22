@@ -55,8 +55,8 @@ class SuratMasukResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Hidden::make('task_id'), // Bisa ditampilkan sebagai Readonly atau Hidden
-                Forms\Components\Hidden::make('document_index'), // Bisa ditampilkan sebagai Readonly atau Hidden
+                Forms\Components\Hidden::make('task_id'), 
+                Forms\Components\Hidden::make('document_index'), 
                 
                 Select::make('letter_type')
                     ->label('Jenis Surat')
@@ -179,11 +179,7 @@ class SuratMasukResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
-            ->bulkActions([
-                // Tables\Actions\BulkActionGroup::make([
-                //     Tables\Actions\DeleteBulkAction::make(),
-                // ]),
-            ])
+            ->bulkActions([ ])
             ->defaultSort('created_at', 'desc');
     }
 
