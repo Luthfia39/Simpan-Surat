@@ -2,12 +2,33 @@
   $start = Carbon\Carbon::parse($tgl_mulai);
   $end = Carbon\Carbon::parse($tgl_selesai);
   $totalMonth = $start->diffInMonths($end, true);
+
+  // Pastikan $kelompok selalu array
+  $formSchemaItems = is_array($kelompok ?? null) ? $kelompok : []; 
+
+  // Inisialisasi array kosong untuk menyimpan data anggota kelompok yang sudah diflatten
+  $anggotaKelompokList = [];
+
+  // Iterasi setiap item di level UUID (level paling atas dari $formSchemaItems)
+  foreach ($formSchemaItems as $uuidKey => $itemData) {
+      // Pastikan ada kunci 'data_surat' dan 'kelompok' di dalam item ini
+      if (isset($itemData['data_surat']['kelompok']) && is_array($itemData['data_surat']['kelompok'])) {
+          $anggota = $itemData['data_surat']['kelompok']; // Ambil array 'kelompok'
+
+          // Tambahkan data anggota ini ke daftar final
+          $anggotaKelompokList[] = [
+              'nama' => $anggota['nama'] ?? '-',
+              'nim' => $anggota['nim'] ?? '-',
+              // Tambahkan field lain jika ada (misal: 'prodi_anggota', 'jurusan_anggota')
+          ];
+      }
+  }
 @endphp
 
 <x-surat>
   <div class="body-header">
     <h1 class="title">SURAT TUGAS</h1>
-    <span class="nomor-surat">NO. 1111/UN1/SV.2-TEDI/PREVIEW/2024</span>
+    <span class="nomor-surat">NO. {{ $nomor_surat ?? '1' }}/UN1/SV.2-TEDI/AKM/PJ/{{ date("Y") }}</span>
   </div>
   <div class="body-main">
     <p>Yang bertanda tangan dibawah ini:</p>
@@ -24,30 +45,30 @@
     </x-info-list>
     <p>Dengan ini menugaskan bahwa mahasiswa yang tersebut di bawah ini,</p>
 
-    @if (isset($kelompok[1]))
-    <table class="table">
+    @if (!empty($anggotaKelompokList) && count($anggotaKelompokList) > 1)
+    <table class="table" style="margin-left: 24px;">
       <tr>
         <th style="width: 16px">No</th>
         <th>Nama</th>
         <th>NIM</th>
         <th>Prodi</th>
       </tr>
-      @foreach (array_values($kelompok) as $anggota)
+      @foreach ($anggotaKelompokList as $anggota) 
         <tr>
           <td style="text-align: center">{{ $loop->iteration . '.' }}</td>
-          <td>{{ $anggota['nama'] }}</td>
-          <td>{{ $anggota['nim'] }}</td>
-          <td>{{ $prodi }}</td>
+          <td>{{ $anggota['nama'] ?? '-' }}</td>
+          <td>{{ $anggota['nim'] ?? '-' }}</td>
+          <td>{{ $prodi ?? '-' }}</td>
         </tr>
       @endforeach
     </table>
     @else
     <x-info-list tab=2 style="margin-left: 24px">
       <x-info-item label="Nama">
-        {{ $kelompok[0]['nama'] }}
+        {{ $anggota['nama'] }}
       </x-info-item>
       <x-info-item label="NIM">
-        {{ $kelompok[0]['nim'] }}
+        {{ $anggota['nim'] }}
       </x-info-item>
       <x-info-item label="Prodi">
         {{ $prodi }}

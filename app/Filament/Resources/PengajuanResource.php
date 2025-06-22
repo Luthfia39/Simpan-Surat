@@ -34,6 +34,10 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Filament\Notifications\Notification;
 
+use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\HtmlString;
+use Filament\Forms\Components\Repeater;
+
 class PengajuanResource extends Resource
 {
     protected static ?string $model = Pengajuan::class;
@@ -134,21 +138,90 @@ class PengajuanResource extends Resource
 
                                         $filamentComponent = null;
 
-                                        if ($fieldConfig['name'] === 'nim') {
+                                        // --- PENANGANAN TIPE INPUT KHUSUS / CUSTOM COMPONENT ---
+                                        if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { // Cek NimInput ada
                                             $filamentComponent = NimInput::make($fieldName)
-                                            ->validationAttribute('NIM')
-                                            ->format(); 
-                                        } elseif ($fieldConfig['name'] === 'ipk') {
+                                                ->validationAttribute('NIM')
+                                                ->format();
+                                        } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
                                             $filamentComponent = IpkInput::make($fieldName)
-                                            ->validationAttribute('IPK')
-                                            ->format(); 
+                                                ->validationAttribute('IPK')
+                                                ->format();
                                         } elseif ($fieldConfig['name'] === 'thn_akademik') {
-                                            $filamentComponent = TextInput::make($fieldName)
-                                            ->mask('9999/9999');
+                                            $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
                                         } elseif ($fieldConfig['name'] === 'nip') {
-                                            $filamentComponent = TextInput::make($fieldName)
-                                            ->minLength(18)
-                                            ->mask('999999999999999999');
+                                            $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
+                                        }
+                                        
+                                        elseif ($fieldConfig['type'] === 'repeater') {
+                                            // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
+                                            $subFieldsSchema = [];
+                                            // Iterasi melalui `sub_schema` yang didefinisikan di Template
+                                            foreach ($fieldConfig['sub_schema'] ?? [] as $subFieldConfig) {
+                                                $subFieldName = $fieldName . '.' . $subFieldConfig['name']; // Path untuk sub-field (misal: data_surat.kelompok.0.nama)
+                                                $subFilamentComponent = null;
+
+                                                // Penanganan tipe input untuk sub-field
+                                                switch ($subFieldConfig['type']) {
+                                                    case 'textarea':
+                                                        $subFilamentComponent = Textarea::make($subFieldName);
+                                                        break;
+                                                    case 'number':
+                                                        $subFilamentComponent = TextInput::make($subFieldName)->numeric();
+                                                        break;
+                                                    case 'date':
+                                                        $subFilamentComponent = DatePicker::make($subFieldName);
+                                                        break;
+                                                    case 'select':
+                                                        // Handle select options for sub-field if needed
+                                                        $subOptions = collect($subFieldConfig['options'] ?? [])->mapWithKeys(function ($option) {
+                                                            return [$option['value'] => $option['label']];
+                                                        })->toArray();
+                                                        $subFilamentComponent = Select::make($subFieldName)->options($subOptions);
+                                                        break;
+                                                    case 'text':
+                                                    default:
+                                                        $subFilamentComponent = TextInput::make($subFieldName);
+                                                        break;
+                                                }
+
+                                                if ($subFieldConfig['name'] === 'nim') { // Cek NimInput ada
+                                                    $subFilamentComponent = TextInput::make($subFieldName)
+                                                        ->placeholder('00/000000/SV/00000')
+                                                        ->mask('99/999999/aa/99999')
+                                                        ->regex('/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/');
+                                                        // dd($subFilamentComponent);
+                                                } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                                                    $subFilamentComponent = IpkInput::make($subFieldName)
+                                                        ->validationAttribute('IPK')
+                                                        ->format();
+                                                } elseif ($subFieldConfig['name'] === 'thn_akademik') {
+                                                    $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
+                                                } elseif ($subFieldConfig['name'] === 'nip') {
+                                                    $subFilamentComponent = TextInput::make($subFieldName)->minLength(18)->mask('999999999999999999');
+                                                } 
+
+                                                if ($subFilamentComponent) {
+                                                    $subFilamentComponent
+                                                        ->label($subFieldConfig['label'])
+                                                        ->default($subFieldConfig['default'] ?? null)
+                                                        ->helperText(new HtmlString($subFieldConfig['helper_text'] ?? null))
+                                                        ->required($subFieldConfig['required'] ?? false);
+                                                        
+                                                    $subFieldsSchema[] = $subFilamentComponent;
+                                                }
+                                            }
+
+                                            $filamentComponent = Repeater::make($fieldName)
+                                                ->label($fieldConfig['label'])
+                                                ->schema($subFieldsSchema)
+                                                ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') // Label untuk tombol tambah repeater
+                                                ->reorderableWithButtons() // Agar bisa diurutkan ulang
+                                                ->columns(2) // Jumlah kolom dalam repeaters
+                                                ->columnSpan('full') // Agar repeater memenuhi lebar
+                                                ->maxItems($fieldConfig['max_items'] ?? null) // Batasan jumlah item
+                                                ->required($fieldConfig['required'] ?? false)
+                                                ->default($fieldConfig['default'] ?? []); // Default untuk repeater adalah array kosong
                                         } else {
                                             switch ($fieldConfig['type']) {
                                                 case 'textarea':
@@ -174,14 +247,13 @@ class PengajuanResource extends Resource
                                             }
                                         }
 
-
                                         if ($filamentComponent) {
                                             $filamentComponent
                                                 ->label($fieldConfig['label'])
                                                 ->default($fieldConfig['default'] ?? null);
 
                                             if (!empty($fieldConfig['helper_text'])) {
-                                                $filamentComponent->helperText($fieldConfig['helper_text']);
+                                                $filamentComponent->helperText(new HtmlString($fieldConfig['helper_text']));
                                             }
 
                                             if ($fieldConfig['required'] ?? false) {
@@ -340,6 +412,7 @@ class PengajuanResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('data_surat.nama')
+                    ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['nama'] ?? '-')
                     ->label('Nama Pengaju (Surat)')
                     ->searchable(),
             ])

@@ -68,8 +68,8 @@ class EditTemplate extends EditRecord
                                 $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
                             } elseif ($fieldConfig['name'] === 'nip') {
                                 $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
-                            } 
-                            // === PENANGANAN UNTUK TIPE REPEATER BARU ===
+                            }
+                            
                             elseif ($fieldConfig['type'] === 'repeater') {
                                 // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
                                 $subFieldsSchema = [];
@@ -101,6 +101,22 @@ class EditTemplate extends EditRecord
                                             $subFilamentComponent = TextInput::make($subFieldName);
                                             break;
                                     }
+
+                                    if ($subFieldConfig['name'] === 'nim') { // Cek NimInput ada
+                                        $subFilamentComponent = TextInput::make($subFieldName)
+                                            ->placeholder('00/000000/SV/00000')
+                                            ->mask('99/999999/aa/99999')
+                                            ->regex('/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/');
+                                            // dd($subFilamentComponent);
+                                    } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                                        $subFilamentComponent = IpkInput::make($subFieldName)
+                                            ->validationAttribute('IPK')
+                                            ->format();
+                                    } elseif ($subFieldConfig['name'] === 'thn_akademik') {
+                                        $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
+                                    } elseif ($subFieldConfig['name'] === 'nip') {
+                                        $subFilamentComponent = TextInput::make($subFieldName)->minLength(18)->mask('999999999999999999');
+                                    } 
 
                                     if ($subFilamentComponent) {
                                         $subFilamentComponent
@@ -202,8 +218,6 @@ class EditTemplate extends EditRecord
                             return;
                         }
 
-                        // $userMajorCode = $adminUser->major['kode'] ?? 'N/A'; // Ambil prodi dari admin yang login
-
                         // Prioritaskan nomor surat dari data form
                         $nomorSurat = 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
                         $prodiSurat = $dataSuratFromForm['prodi']; // Prodi dari form atau dari user admin
@@ -218,7 +232,6 @@ class EditTemplate extends EditRecord
                             // Tambahkan data dari record Template itu sendiri
                             $viewData['template'] = $templateRecord;
                             $viewData['user'] = $adminUser; 
-
 
                             $pdfContent = view('templates.' . $templateRecord->class_name, $viewData)->render();
 
