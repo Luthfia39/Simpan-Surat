@@ -29,7 +29,7 @@ class TemplateResource extends Resource
 
     protected static ?string $pluralLabel = 'Templates Surat';
 
-    protected static bool $shouldRegisterNavigation = false;
+    // protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Form $form): Form
     {
@@ -42,13 +42,13 @@ class TemplateResource extends Resource
                             ->label('Nama Template')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true, table: Template::class, column: 'name'), // Perbaiki table/column jika unique hanya untuk field 'name' di Template
                         Forms\Components\TextInput::make('class_name')
                             ->label('Nama Blade View (misal: magang)')
                             ->helperText('Akan merujuk ke resources/views/templates/{classname}.blade.php untuk rendering PDF/UI.')
                             ->required()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true, table: Template::class, column: 'class_name'), // Perbaiki table/column jika unique hanya untuk field 'class_name' di Template
                         Forms\Components\Toggle::make('for_user')
                             ->label('Tersedia untuk Pengguna Umum')
                             ->helperText('Jika aktif, template ini akan muncul di daftar pilihan pengguna.')
@@ -64,9 +64,12 @@ class TemplateResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('name')
                                     ->label('Nama Field (kunci)')
-                                    ->helperText('Gunakan snake_case (misal: nama_lengkap, tgl_mulai). Harus unik.')
+                                    ->helperText('Gunakan snake_case (misal: nama_lengkap, tgl_mulai). Harus unik dalam satu template.')
                                     ->required()
-                                    ->unique(ignoreRecord: true, table: Template::class, column: 'form_schema.*.name'),
+                                    // Unique Rule untuk Repeater: Pastikan unik DALAM INSTANCE REPEATER INI.
+                                    // Rule unique global di dalam repeater nested sangat kompleks dan sering dihindari.
+                                    // Jika ingin unique across all templates, perlu validasi kustom.
+                                    ->unique(ignoreRecord: true, table: Template::class, column: 'form_schema.*.name'), // Ini hanya memastikan unik untuk field 'name' dalam 'form_schema' dari Template yang sama.
                                 Forms\Components\TextInput::make('label')
                                     ->label('Label Tampilan')
                                     ->required(),
@@ -80,20 +83,22 @@ class TemplateResource extends Resource
                                         'email' => 'Email',
                                         'url' => 'URL',
                                         'select' => 'Dropdown (Pilihan)',
+                                        'repeater' => 'Daftar Berulang (Repeater)', // <--- TAMBAHKAN TIPE INI
                                     ])
                                     ->required()
                                     ->live(),
 
-                                // Tambahkan helper text input di sini
                                 Forms\Components\TextInput::make('helper_text')
                                     ->label('Teks Bantuan (Opsional)')
                                     ->helperText('Akan muncul di bawah input field.')
                                     ->nullable()
-                                    ->visible(fn (Forms\Get $get) => in_array($get('type'), ['text', 'textarea', 'number', 'date', 'email', 'url', 'select'])), // Tampilkan untuk tipe input tertentu
+                                    ->visible(fn (Forms\Get $get) => in_array($get('type'), ['text', 'textarea', 'number', 'date', 'email', 'url', 'select', 'repeater'])), // Tampilkan juga untuk repeater
 
                                 Forms\Components\TextInput::make('default')
                                     ->label('Nilai Default (Opsional)')
-                                    ->nullable(),
+                                    ->nullable()
+                                    ->visible(fn (Forms\Get $get) => $get('type') !== 'repeater'), // Sembunyikan default untuk tipe repeater
+
                                 Forms\Components\Toggle::make('required')
                                     ->label('Wajib Diisi')
                                     ->default(false),
@@ -114,6 +119,56 @@ class TemplateResource extends Resource
                                     ->default([])
                                     ->columnSpanFull()
                                     ->visible(fn (Forms\Get $get) => $get('type') === 'select'),
+
+                                // === KODE REPEATER 'kelompok' BARU DITAMBAHKAN DI SINI ===
+                                Forms\Components\Repeater::make('sub_schema') // Nama field untuk skema repeater internal
+                                    ->label('Skema Field untuk Repeater Ini')
+                                    ->helperText('Definisikan field-field yang ada di dalam setiap item repeater (misal: nama, NIM).')
+                                    ->default([])
+                                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null) // Item label dari sub-field 'label'
+                                    ->schema([ // Skema untuk field di dalam repeater ini
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nama Sub-Field (kunci)')
+                                            ->helperText('Gunakan snake_case (misal: nama, nim).')
+                                            ->required()
+                                            ->unique(ignoreRecord: true, table: Template::class, column: 'form_schema.*.sub_schema.*.name'), // Unique untuk sub-field
+                                        Forms\Components\TextInput::make('label')
+                                            ->label('Label Tampilan Sub-Field')
+                                            ->required(),
+                                        Forms\Components\Select::make('type')
+                                            ->label('Tipe Input Sub-Field')
+                                            ->options([ // Opsi tipe input untuk sub-field
+                                                'text' => 'Teks Pendek',
+                                                'textarea' => 'Teks Panjang',
+                                                'number' => 'Angka',
+                                                'date' => 'Tanggal',
+                                                'email' => 'Email',
+                                                'url' => 'URL',
+                                                // 'select' => 'Dropdown (Pilihan)', // Hati-hati nested select di repeater
+                                                // 'repeater' => 'Repeater (Jangan nested lagi!)', // Hindari terlalu banyak nesting repeater
+                                            ])
+                                            ->required()
+                                            ->live(), // Penting agar helper_text, default, dll. bisa kondisional
+
+                                        Forms\Components\TextInput::make('helper_text')
+                                            ->label('Teks Bantuan Sub-Field (Opsional)')
+                                            ->nullable()
+                                            ->visible(fn (Forms\Get $get) => in_array($get('type'), ['text', 'textarea', 'number', 'date', 'email', 'url'])),
+
+                                        Forms\Components\TextInput::make('default')
+                                            ->label('Nilai Default Sub-Field (Opsional)')
+                                            ->nullable()
+                                            ->visible(fn (Forms\Get $get) => $get('type') !== 'repeater'),
+
+                                        Forms\Components\Toggle::make('required')
+                                            ->label('Wajib Diisi Sub-Field')
+                                            ->default(false),
+                                    ])
+                                    ->columnSpanFull()
+                                    ->grid(2) // Tata letak grid untuk sub-field
+                                    ->visible(fn (Forms\Get $get) => $get('type') === 'repeater'), // <--- HANYA TAMPIL JIKA TIPE = 'repeater'
+                                // === AKHIR KODE REPEATER 'kelompok' BARU DITAMBAHKAN ===
+
                             ])
                             ->columnSpanFull()
                             ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)

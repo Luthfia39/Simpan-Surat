@@ -20,6 +20,8 @@ use Filament\Notifications\Notification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use Filament\Forms\Components\Repeater;
 
 class EditTemplate extends EditRecord
 {
@@ -35,54 +37,115 @@ class EditTemplate extends EditRecord
     {
         return $form
             ->schema([
-                // Bagian Baru: Isi Contoh Data Template
-                Section::make('Data Surat ' . $this->record->name)
-                    // ->description('Gunakan bagian ini untuk mengisi contoh data sesuai definisi template. Data ini dapat digunakan untuk pratinjau atau default.')
+                // Bagian ini akan menampilkan input-input dinamis
+                Section::make('Data Surat ' . ($this->record->name ? $this->record->name :''))
+                    ->description('Silakan isi data yang dibutuhkan untuk surat ini.')
+                    // Fungsi ini akan dieksekusi untuk membangun schema form
+                    // $record di sini adalah instance model dari record yang sedang dibuat/diedit (misal model Surat atau PermintaanSurat)
                     ->schema(function (\App\Models\Template $record): array {
+                        // Ambil `template_id` yang dipilih oleh pengguna (jika ada dropdown template di form ini)
+                        // Atau, jika template sudah fix, ambil langsung dari DB
+
                         $fields = [];
+                        // Iterasi melalui skema form yang didefinisikan di template
                         foreach ($record->form_schema as $fieldConfig) {
-                            $fieldName = 'data_surat.' . $fieldConfig['name']; // Data akan disimpan ke `sample_data`
+                            // Nama field di database (misal: data_surat.nama_lengkap)
+                            // Ini akan menjadi path untuk menyimpan data input pengguna
+                            $fieldName = 'data_surat.' . $fieldConfig['name']; 
 
                             $filamentComponent = null;
 
-                            // --- Panggil Custom Component berdasarkan 'name' fieldConfig ---
-                            if ($fieldConfig['name'] === 'nim') {
+                            // --- PENANGANAN TIPE INPUT KHUSUS / CUSTOM COMPONENT ---
+                            if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { // Cek NimInput ada
                                 $filamentComponent = NimInput::make($fieldName)
-                                ->validationAttribute('NIM')
-                                ->format();
-                            } elseif ($fieldConfig['name'] === 'ipk') {
+                                    ->validationAttribute('NIM')
+                                    ->format();
+                            } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
                                 $filamentComponent = IpkInput::make($fieldName)
-                                ->validationAttribute('IPK')
-                                ->format();
+                                    ->validationAttribute('IPK')
+                                    ->format();
                             } elseif ($fieldConfig['name'] === 'thn_akademik') {
-                                $filamentComponent = TextInput::make($fieldName)
-                                ->mask('9999/9999');
+                                $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
                             } elseif ($fieldConfig['name'] === 'nip') {
-                                $filamentComponent = TextInput::make($fieldName)
-                                ->minLength(18)
-                                ->mask('999999999999999999');
-                            } else {
-                                // Panggil component Filament bawaan berdasarkan 'type'
+                                $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
+                            } 
+                            // === PENANGANAN UNTUK TIPE REPEATER BARU ===
+                            elseif ($fieldConfig['type'] === 'repeater') {
+                                // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
+                                $subFieldsSchema = [];
+                                // Iterasi melalui `sub_schema` yang didefinisikan di Template
+                                foreach ($fieldConfig['sub_schema'] ?? [] as $subFieldConfig) {
+                                    $subFieldName = $fieldName . '.' . $subFieldConfig['name']; // Path untuk sub-field (misal: data_surat.kelompok.0.nama)
+                                    $subFilamentComponent = null;
+
+                                    // Penanganan tipe input untuk sub-field
+                                    switch ($subFieldConfig['type']) {
+                                        case 'textarea':
+                                            $subFilamentComponent = Textarea::make($subFieldName);
+                                            break;
+                                        case 'number':
+                                            $subFilamentComponent = TextInput::make($subFieldName)->numeric();
+                                            break;
+                                        case 'date':
+                                            $subFilamentComponent = DatePicker::make($subFieldName);
+                                            break;
+                                        case 'select':
+                                            // Handle select options for sub-field if needed
+                                            $subOptions = collect($subFieldConfig['options'] ?? [])->mapWithKeys(function ($option) {
+                                                return [$option['value'] => $option['label']];
+                                            })->toArray();
+                                            $subFilamentComponent = Select::make($subFieldName)->options($subOptions);
+                                            break;
+                                        case 'text':
+                                        default:
+                                            $subFilamentComponent = TextInput::make($subFieldName);
+                                            break;
+                                    }
+
+                                    if ($subFilamentComponent) {
+                                        $subFilamentComponent
+                                            ->label($subFieldConfig['label'])
+                                            ->default($subFieldConfig['default'] ?? null)
+                                            ->helperText(new HtmlString($subFieldConfig['helper_text'] ?? null))
+                                            ->required($subFieldConfig['required'] ?? false);
+                                            
+                                        $subFieldsSchema[] = $subFilamentComponent;
+                                    }
+                                }
+
+                                $filamentComponent = Repeater::make($fieldName)
+                                    ->label($fieldConfig['label'])
+                                    ->schema($subFieldsSchema)
+                                    ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') // Label untuk tombol tambah repeater
+                                    ->reorderableWithButtons() // Agar bisa diurutkan ulang
+                                    ->columns(2) // Jumlah kolom dalam repeaters
+                                    ->columnSpan('full') // Agar repeater memenuhi lebar
+                                    ->maxItems($fieldConfig['max_items'] ?? null) // Batasan jumlah item
+                                    ->required($fieldConfig['required'] ?? false)
+                                    ->default($fieldConfig['default'] ?? []); // Default untuk repeater adalah array kosong
+                            }
+                            // --- AKHIR PENANGANAN TIPE REPEATER ---
+                            else {
+                                // === PENANGANAN TIPE INPUT BAWAAN FILAMENT ===
                                 switch ($fieldConfig['type']) {
                                     case 'textarea':
-                                        $filamentComponent = Textarea::make($fieldName); // Pastikan Textarea diimport
+                                        $filamentComponent = Textarea::make($fieldName);
                                         break;
                                     case 'number':
                                         $filamentComponent = TextInput::make($fieldName)->numeric();
                                         break;
                                     case 'date':
-                                        $filamentComponent = DatePicker::make($fieldName); // Pastikan DatePicker diimport
+                                        $filamentComponent = DatePicker::make($fieldName);
                                         break;
                                     case 'select':
                                         $options = collect($fieldConfig['options'] ?? [])->mapWithKeys(function ($option) {
                                             return [$option['value'] => $option['label']];
                                         })->toArray();
-                                        $filamentComponent = Select::make($fieldName)
-                                            ->options($options);
+                                        $filamentComponent = Select::make($fieldName)->options($options);
                                         break;
                                     case 'text':
                                     default:
-                                        $filamentComponent = TextInput::make($fieldName);
+                                        $filamentComponent = TextInput::make($fieldName)->minLength(2);
                                         break;
                                 }
                             }
@@ -90,9 +153,9 @@ class EditTemplate extends EditRecord
                             if ($filamentComponent) {
                                 $filamentComponent
                                     ->label($fieldConfig['label'])
-                                    // Default nilai dari `sample_data` record yang sedang diedit
-                                    ->default(fn (Get $get) => $get($fieldName))
-                                    ->helperText($fieldConfig['helper_text'] ?? null); // Gunakan helper_text dari definisi template
+                                    ->default($fieldConfig['default'] ?? null)
+                                    ->helperText(new HtmlString($fieldConfig['helper_text'] ?? null))
+                                    ->required($fieldConfig['required'] ?? false); // Ambil `required` dari template
 
                                 $fields[] = $filamentComponent;
                             }
@@ -101,7 +164,9 @@ class EditTemplate extends EditRecord
                     })
                     ->columns(2), // Layout untuk field dinamis contoh data
             ])
-            ->statePath('data');
+            // statePath akan menentukan di mana data input dinamis ini disimpan di model
+            // Misalnya, jika model punya kolom 'data_surat' dengan cast 'array' atau 'json'
+            ->statePath('data'); 
     }
 
     protected function getFormActions(): array
