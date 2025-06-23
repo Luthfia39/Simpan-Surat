@@ -116,7 +116,9 @@ class EditTemplate extends EditRecord
                                         $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
                                     } elseif ($subFieldConfig['name'] === 'nip') {
                                         $subFilamentComponent = TextInput::make($subFieldName)->minLength(18)->mask('999999999999999999');
-                                    } 
+                                    } elseif ($subFieldConfig['name'] === 'pukul') {
+                                        $subFilamentComponent = TextInput::make($subFieldName)->mask('99.99 s.d 99.99');
+                                    }
 
                                     if ($subFilamentComponent) {
                                         $subFilamentComponent
@@ -220,7 +222,7 @@ class EditTemplate extends EditRecord
 
                         // Prioritaskan nomor surat dari data form
                         $nomorSurat = 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
-                        $prodiSurat = $dataSuratFromForm['prodi']; // Prodi dari form atau dari user admin
+                        $prodiSurat = $dataSuratFromForm['prodi'] ?? null; // Prodi dari form atau dari user admin
 
                         $pdfPath = null;
                         try {

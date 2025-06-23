@@ -144,7 +144,7 @@ class TemplateResource extends Resource
                                                 'date' => 'Tanggal',
                                                 'email' => 'Email',
                                                 'url' => 'URL',
-                                                // 'select' => 'Dropdown (Pilihan)', // Hati-hati nested select di repeater
+                                                'select' => 'Dropdown (Pilihan)', // Hati-hati nested select di repeater
                                                 // 'repeater' => 'Repeater (Jangan nested lagi!)', // Hindari terlalu banyak nesting repeater
                                             ])
                                             ->required()
