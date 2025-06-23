@@ -64,11 +64,14 @@ class SuratKeluarResource extends Resource
                             $prodiCode = $record->metadata->prodi ?? null;
                         }
                         elseif (is_string($record->metadata)) {
-                             $decodedMetadata = json_decode($record->metadata, true);
-                             $prodiCode = $decodedMetadata['prodi'] ?? null; 
+                            $decodedMetadata = json_decode($record->metadata, true);
+                            $prodiCode = $decodedMetadata['prodi'] ?? null; 
                         }
                         
-                        return Major::getNameByCode($prodiCode) ?? $prodiCode ?? '-';
+                        if ($prodiCode !== null) {
+                            return Major::getNameByCode($prodiCode) ? $prodiCode : '-';
+                        }
+                        return '-';
                     })
                     ->sortable()
                     ->searchable(),

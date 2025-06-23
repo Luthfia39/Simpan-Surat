@@ -81,6 +81,7 @@ class SuratMasukResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 BadgeColumn::make('review_status')
+                    ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
                     ->label('Status Review')
                     ->colors([
                         'gray' => 'pending_review',

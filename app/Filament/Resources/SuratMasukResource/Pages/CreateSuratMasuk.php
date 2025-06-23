@@ -137,6 +137,7 @@ class CreateSuratMasuk extends CreateRecord
             foreach ($surats as $surat) {
                 if (($surat->is_ugm ?? false) === false) {
                     $isUgmLetterDetected = false;
+                    $surat->delete();
                     break; 
                 }
             }
