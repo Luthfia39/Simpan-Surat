@@ -53,6 +53,11 @@ class SuratKeluarResource extends Resource
                     ->sortable()
                     ->searchable(),
 
+                TextColumn::make('template.name')
+                    ->label('Template')
+                    ->sortable()
+                    ->searchable(),
+
                 TextColumn::make('metadata.prodi')
                     ->label('Program Studi')
                     ->getStateUsing(function ($record) {
@@ -97,7 +102,6 @@ class SuratKeluarResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([ ])
             ->defaultSort('created_at', 'desc');
