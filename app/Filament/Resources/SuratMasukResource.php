@@ -43,7 +43,7 @@ class SuratMasukResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::query()->where('status', 'pending_review')->count();
+        return static::getModel()::query()->where('review_status', 'pending_review')->count() > 0 ? (string) static::getModel()::query()->where('review_status', 'pending_review')->count() : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -176,7 +176,7 @@ class SuratMasukResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->label(fn (Model $record): string => $record->review_status === 'reviewed' ? 'Lihat Detail' : 'Review OCR'),
+                    ->label(fn (Model $record): string => $record->review_status === 'reviewed' ? 'Lihat Hasil OCR' : 'Review OCR'),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

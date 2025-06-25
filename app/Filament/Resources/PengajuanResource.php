@@ -47,7 +47,7 @@ class PengajuanResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationBadgeTooltip = 'Jumlah Pengajuan yang Menunggu Review';
+    protected static ?string $navigationBadgeTooltip = 'Jumlah Pengajuan yang Belum Selesai';
 
     public static function getNavigationBadge(): ?string
     {
