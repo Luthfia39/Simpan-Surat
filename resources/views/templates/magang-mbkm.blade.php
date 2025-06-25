@@ -42,7 +42,7 @@
       </x-info-item>
     </x-info-list>
     
-    <p class="justify">Untuk mengikuti kegiatan Magang MBKM yang diselenggarakan oleh {{ $penyelenggara }} selama {{ floor($totalMonth) }} bulan, dimulai tanggal {{ $start->translatedFormat('j F Y'); }} s.d. {{ $end->translatedFormat('j F Y'); }}. <u>Program ini untuk dapat dilaksanakan sesuai dengan Kurikulum Kampus Merdeka.</u> </p>
+    <p class="justify">Untuk mengikuti kegiatan Magang MBKM yang diselenggarakan oleh {{ $penyelenggara }} selama {{ floor($totalMonth) }} bulan, dimulai tanggal {{ $start->locale('id')->translatedFormat('j F Y'); }} s.d. {{ $end->locale('id')->translatedFormat('j F Y'); }}. <u>Program ini untuk dapat dilaksanakan sesuai dengan Kurikulum Kampus Merdeka.</u> </p>
     <p class="justify">Demikian surat ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
   </div>
   <x-sign-layout />

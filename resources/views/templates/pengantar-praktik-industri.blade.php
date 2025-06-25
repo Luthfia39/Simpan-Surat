@@ -25,7 +25,7 @@
 @endphp
 
 <x-surat>
-  <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}</span>
+  <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('j F Y') }}</span>
   <div class="body-main">
     <x-info-list style="margin-top: 24px">
       <x-info-item label="Nomor">
@@ -78,7 +78,7 @@
     </x-info-list>
     @endif
 
-  <p class="justify">Adapun periode Praktik Industri yang kami usulkan yaitu mulai tanggal {{ $start->translatedFormat('j F Y') }} s.d. {{ $end->translatedFormat('j F Y') }}. Apabila berkenan untuk konfirmasi lebih lanjut dapat menghubungi Sekretariat Departemen Teknik Elektro dan Informatika SV-UGM dengan nomor telepon 0274 561111 dan email tedi.sv@ugm.ac.id.</p>
+  <p class="justify">Adapun periode Praktik Industri yang kami usulkan yaitu mulai tanggal {{ $start->locale('id')->translatedFormat('j F Y') }} s.d. {{ $end->locale('id')->translatedFormat('j F Y') }}. Apabila berkenan untuk konfirmasi lebih lanjut dapat menghubungi Sekretariat Departemen Teknik Elektro dan Informatika SV-UGM dengan nomor telepon 0274 561111 dan email tedi.sv@ugm.ac.id.</p>
   <p>Demikian permohonan ini, atas perhatian dan kerja samanya kami ucapkan terima kasih.</p>
   </div>
 

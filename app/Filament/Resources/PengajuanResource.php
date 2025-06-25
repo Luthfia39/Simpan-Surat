@@ -37,6 +37,7 @@ use Filament\Notifications\Notification;
 use Filament\Forms\Components\FileUpload;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Repeater;
+use Carbon\Carbon;
 
 class PengajuanResource extends Resource
 {
@@ -152,7 +153,23 @@ class PengajuanResource extends Resource
                                                 ->validationAttribute('IPK')
                                                 ->format();
                                         } elseif ($fieldConfig['name'] === 'thn_akademik') {
-                                            $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
+                                            // $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
+                                            $filamentComponent = TextInput::make($fieldName)
+                                                ->mask('9999/9999')
+                                                ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                                                    // Pastikan state tidak kosong dan mengandung '/'
+                                                    if ($state && Str::contains($state, '/')) {
+                                                        $parts = explode('/', $state);
+                                                        $firstYear = (int) $parts[0];
+                                                        // Jika angka pertama valid dan kita sudah punya slash
+                                                        if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
+                                                            $nextYear = $firstYear + 1;
+                                                            // Set kembali nilai field dengan tahun kedua yang otomatis
+                                                            $set($get('statePath'), $firstYear . '/' . $nextYear);
+                                                        }
+                                                    }
+                                                })
+                                                ->live(onBlur: true);
                                         } elseif ($fieldConfig['name'] === 'nip') {
                                             $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
                                         }
@@ -200,7 +217,23 @@ class PengajuanResource extends Resource
                                                         ->validationAttribute('IPK')
                                                         ->format();
                                                 } elseif ($subFieldConfig['name'] === 'thn_akademik') {
-                                                    $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
+                                                    // $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
+                                                    $filamentComponent = TextInput::make($fieldName)
+                                                        ->mask('9999/9999')
+                                                        ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                                                            // Pastikan state tidak kosong dan mengandung '/'
+                                                            if ($state && Str::contains($state, '/')) {
+                                                                $parts = explode('/', $state);
+                                                                $firstYear = (int) $parts[0];
+                                                                // Jika angka pertama valid dan kita sudah punya slash
+                                                                if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
+                                                                    $nextYear = $firstYear + 1;
+                                                                    // Set kembali nilai field dengan tahun kedua yang otomatis
+                                                                    $set($get('statePath'), $firstYear . '/' . $nextYear);
+                                                                }
+                                                            }
+                                                        })
+                                                        ->live(onBlur: true);
                                                 } elseif ($subFieldConfig['name'] === 'nip') {
                                                     $subFilamentComponent = TextInput::make($subFieldName)->minLength(18)->mask('999999999999999999');
                                                 } 
@@ -423,6 +456,27 @@ class PengajuanResource extends Resource
                     ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['nama'] ?? '-')
                     ->label('Nama Pengaju (Surat)')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Tanggal Pengajuan')
+                    ->getStateUsing(function ($record): ?string {
+                        // Jika created_at itu adalah kolom timestamp langsung dari DB
+                        if ($record->created_at instanceof \DateTimeInterface) {
+                            // Menggunakan Carbon untuk format lokal
+                            return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
+                        }
+                        // Jika tanggal ada di extracted_fields (misal 'tanggal' dari OCR)
+                        // dan kamu ingin menggunakan itu, pastikan itu sudah string tanggal yang valid.
+                        if (is_array($record->extracted_fields) && isset($record->extracted_fields['tanggal']['text'])) {
+                            try {
+                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')->translatedFormat('l, j F Y');
+                            } catch (\Exception $e) {
+                                // Jika parsing gagal, kembalikan teks aslinya atau null
+                                return $record->extracted_at['tanggal']['text'] ?? null;
+                            }
+                        }
+                        return '-'; // Default jika tidak ada data
+                    })
+                    ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

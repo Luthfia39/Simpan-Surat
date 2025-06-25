@@ -80,6 +80,12 @@ class SuratKeluarResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
+
+                TextColumn::make('created_at')
+                    ->label('Waktu Pembuatan')
+                    ->date_format('d M Y')
+                    ->sortable()
+                    ->searchable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('prodi')

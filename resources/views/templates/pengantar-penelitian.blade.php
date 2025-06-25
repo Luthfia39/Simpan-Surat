@@ -3,7 +3,7 @@
 @endphp
 
 <x-surat>
-  <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}</span>
+  <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('j F Y') }}</span>
   <div class="body-main">
     <x-info-list style="margin-top: 24px">
       <x-info-item label="Nomor">
@@ -40,7 +40,7 @@
       </x-info-item>
     </x-info-list>
 
-  <p class="justify">Untuk dapat melaksanakan Penelitian Proyek Akhir mulai bulan {{ $start->translatedFormat('F Y') }}. Topik "{{ $topik }}". Apabila berkenan untuk konfirmasi lebih lanjut dapat menghubungi Sekretariat Departemen Teknik Elektro dan Informatika SV-UGM dengan nomor telpon 0274 561111 dan email tedi.sv@ugm.ac.id.</p>
+  <p class="justify">Untuk dapat melaksanakan Penelitian Proyek Akhir mulai bulan {{ $start->locale('id')->translatedFormat('F Y') }}. Topik "{{ $topik }}". Apabila berkenan untuk konfirmasi lebih lanjut dapat menghubungi Sekretariat Departemen Teknik Elektro dan Informatika SV-UGM dengan nomor telpon 0274 561111 dan email tedi.sv@ugm.ac.id.</p>
   <p>Demikian permohonan ini, atas perhatian dan kerja samanya kami ucapkan terima kasih.</p>
   </div>
 

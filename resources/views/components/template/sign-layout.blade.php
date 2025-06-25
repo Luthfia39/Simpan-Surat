@@ -2,7 +2,7 @@
 
 <div class="ttd">
   @if($tanggal)
-    <span>Yogyakarta, {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}</span>
+    <span>Yogyakarta, {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('j F Y') }}</span>
   @endif
   @if($atasNama)
     <span>a.n Wakil Dekan Bidang Akademik dan Kemahasiswaan</span>

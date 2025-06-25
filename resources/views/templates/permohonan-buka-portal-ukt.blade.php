@@ -23,7 +23,7 @@
 @endphp
 
 <x-surat>
-    <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}</span>
+    <span class="tgl-right">Yogyakarta, {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('j F Y') }}</span>
 
     <x-info-list style="margin-top: 24px">
       <x-info-item label="Nomor">

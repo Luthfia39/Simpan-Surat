@@ -49,7 +49,7 @@
       </x-info-item>
     </x-info-list>
 
-    <p class="justify">Adalah benar-benar mahasiswa Sekolah Vokasi Universitas Gadjah Mada yang terdaftar aktif kuliah pada Semester semester Tahun Akademik {{$thn_akademik}}.</p>
+    <p class="justify">Adalah benar-benar mahasiswa Sekolah Vokasi Universitas Gadjah Mada yang terdaftar aktif kuliah pada Semester {{ $semester }} Tahun Akademik {{$thn_akademik}}.</p>
     <p class="justify">Adapun surat keterangan ini kami buat sebagai persyaratan {{$keterangan}}.</p>
     <p class="justify">Demikian untuk dapat dipergunakan sebagaimana mestinya.</p>
   </div>
