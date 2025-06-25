@@ -51,9 +51,6 @@ class EditSuratMasuks extends EditRecord
         return "Cek kembali hasil OCR berikut ini, pastikan data yang disimpan telah sesuai.";
     }
 
-    // use InteractsWithFormActions;
-
-
     public function mount(string|int $record): void
     {
 
@@ -61,8 +58,6 @@ class EditSuratMasuks extends EditRecord
 
         $ocrData = $this->record;
         $this->annotations = is_string($this->record->extracted_fields) ? json_decode($this->record->extracted_fields, true) : ($this->record->extracted_fields ?? []);
-
-        // $ocrData = Surat::where('task_id', $this->taskId)->first();
 
         Log::info('Surat dari yang mau diedit:', [
             'surat' => $ocrData['ocr_text'],
@@ -78,8 +73,6 @@ class EditSuratMasuks extends EditRecord
         ]);
 
         $this->form->fill([
-            // 'pdf_path' => $ocrData['pdf_url'],
-            // 'ocr_text' => $this->ocr,
             'letter_type' => $ocrData['letter_type'],
         ]);
     }
@@ -131,11 +124,9 @@ class EditSuratMasuks extends EditRecord
             \Log::error('Livewire: Error saving document from updateDocumentOcrAndAnnotations:', ['error' => $e->getMessage(), 'id' => $this->record->id]);
             Notification::make()->title('Gagal menyimpan perubahan: ' . $e->getMessage())->danger()->send();
         }
-        // $this->save();
     }
 
     public function onProcessSave(): void {
-        // $this->dispatch('update-data');
         // Validasi form dasar Filament di halaman ini
         $this->form->validate();
         $formData = $this->form->getState(); // Ambil data dari form fields (misal letter_type)
@@ -156,46 +147,4 @@ class EditSuratMasuks extends EditRecord
         // Redirect kembali ke halaman daftar setelah selesai review satu dokumen
         $this->redirect(SuratMasukResource::getUrl('index'));
     }
-
-    // public function save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true): void
-    // {
-    //     $data = $this->form->getState();
-
-    //     $grouped = [];
-
-    //     foreach ($this->annotations as $annotation) {
-    //         $type = key($annotation);
-    //         $text = $annotation[$type];
-
-    //         if (!isset($grouped[$type])) {
-    //             $grouped[$type] = [];
-    //         }
-
-    //         $grouped[$type][] = $text;
-    //     }
-
-    //     // Simpan ke MongoDB
-    //     $surat = Surat::where('task_id', $this->taskId)->firstOrNew();
-
-    //     $surat->fill([
-    //         'ocr_text' => $this->ocr,
-    //         'letter_type' => $data['letter_type'],
-    //         'extracted_fields' => $grouped,
-    //         'pdf_url' => $data['pdf_path'],
-    //     ]);
-
-    //     $surat->save();
-
-    //     Notification::make()
-    //         ->title('Surat berhasil disimpan')
-    //         ->success()
-    //         ->send();
-
-    //     // Jika ingin redirect, aktifkan bagian ini
-    //     if ($shouldRedirect) {
-    //         $this->redirect(
-    //             route('filament.admin.resources.surat-masuks.index')
-    //         );
-    //     }
-    // }
 }

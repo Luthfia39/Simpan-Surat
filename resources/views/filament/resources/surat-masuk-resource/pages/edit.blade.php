@@ -3,131 +3,143 @@
         {{ $this->form }}
 
         <h3 class="text-lg font-semibold mb-2 mt-6">Pratinjau Teks OCR & Anotasi:</h3>
-        <div 
-            id="ocr-viewer-container" {{-- ID untuk container utama Alpine --}}
-            x-data="{
-                // Properti Alpine di-entangle langsung dari Livewire
-                ocr: @entangle('ocr'),
-                annotations: @entangle('annotations'),
-                isSaving: false, // Indikator loading
+        <div class="flex flex-col lg:flex-row gap-4">
+            <div class="flex-1">
+                <div 
+                    id="ocr-viewer-container"
+                    x-data="{
+                        // Properti Alpine di-entangle langsung dari Livewire
+                        ocr: @entangle('ocr'),
+                        annotations: @entangle('annotations'),
+                        isSaving: false, // Indikator loading
 
-                // Method untuk mengirim update ke Livewire
-                // Ini dipanggil oleh saveAnnotation() dan click MARK delete
-                dispatchUpdate: function(finalOcr, finalAnnotations) {
-                    this.isSaving = true; // Aktifkan indikator loading
-                    console.log('Dispatching update to Livewire. OCR length:', finalOcr.length, 'Annotations count:', Object.keys(finalAnnotations).length);
-                    
-                    let dataToSend = finalAnnotations;
-                    if (typeof finalAnnotations === 'string') {
-                        try {
-                            dataToSend = JSON.parse(finalAnnotations);
-                        } catch (e) {
-                            console.error('Failed to parse annotations string:', e);
-                            // Handle error, maybe send empty array or original string
-                            dataToSend = {}; 
-                        }
-                    }
-                        
-                    // Panggil updateDocumentOcrAndAnnotations di PHP (nama method di EditSuratMasuks.php)
-                    // Tidak perlu documentIndex, karena PHP sudah tahu record mana yang sedang diedit ($this->record)
-                    $wire.updateData( 
-                        finalOcr,
-                        dataToSend
-                    );
-                },
-                init() {
-                    console.log('--- Alpine x-data scope initialized! ---');
-                    
-                    // Watcher untuk properti 'ocr' di Alpine
-                    this.$watch('ocr', (newOcr) => {
-                        if (newOcr) {
-                            console.log('OCR property changed in Alpine! Re-rendering highlights.');
-                            this.$nextTick(() => {
-                                // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
-                                ocrContentDiv = document.getElementById('ocr-content'); 
-                                renderHighlights();
-                            });
-                        }
-                    });
-
-                    // Watcher untuk properti 'annotations' di Alpine
-                    this.$watch('annotations', (newAnnotations) => {
-                        console.log('Annotations property changed in Alpine! Re-rendering highlights.');
-                        this.$nextTick(() => {
-                            // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
-                            ocrContentDiv = document.getElementById('ocr-content'); 
-                            renderHighlights();
-                        });
-                    }, { deep: true }); // Watch deeply for changes within the object
-                    
-                    // Event Livewire yang menerima data OCR dan anotasi dari backend
-                    // Dipicu dari mount() PHP
-                    this.$wire.on('ocr-loaded', ({ ocr, extracted_fields }) => {
-                        console.log('Livewire ocr-loaded event received for viewer. Updating OCR and annotations.');
-                        this.annotations = extracted_fields; // PHP sudah kirim sebagai array/object yang benar
-                        this.ocr = ocr; 
-                        this.isSaving = false; // Sembunyikan loading jika data awal dimuat
-                    });
-
-                    // Listener untuk event dari Livewire setelah penyimpanan selesai (updateData di PHP)
-                    this.$wire.on('document-update-completed', () => {
-                        console.log('Livewire: document-update-completed event received. Starting delayed highlight render.');
-                        this.isSaving = false; // Sembunyikan indikator loading
-                        setTimeout(() => {
-                            // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
-                            ocrContentDiv = document.getElementById('ocr-content'); 
-                            renderHighlights(); 
-                            console.log('Delayed renderHighlights finished.');
-                        }, 500); 
-                    });
-                    
-                    // Event Listener untuk Perubahan Input Teks di OCR Div
-                    this.$nextTick(() => {
-                        ocrContentDiv = document.getElementById('ocr-content'); // Inisialisasi ocrContentDiv di sini juga
-                        if (ocrContentDiv) {
-                            // Initial render highlights jika data OCR sudah ada saat inisialisasi Alpine
-                            if (this.ocr) {
-                                console.log('Initial OCR present in Alpine. Rendering highlights.');
-                                renderHighlights();
+                        // Method untuk mengirim update ke Livewire
+                        // Ini dipanggil oleh saveAnnotation() dan click MARK delete
+                        dispatchUpdate: function(finalOcr, finalAnnotations) {
+                            this.isSaving = true; // Aktifkan indikator loading
+                            console.log('Dispatching update to Livewire. OCR length:', finalOcr.length, 'Annotations count:', Object.keys(finalAnnotations).length);
+                            
+                            let dataToSend = finalAnnotations;
+                            if (typeof finalAnnotations === 'string') {
+                                try {
+                                    dataToSend = JSON.parse(finalAnnotations);
+                                } catch (e) {
+                                    console.error('Failed to parse annotations string:', e);
+                                    // Handle error, maybe send empty array or original string
+                                    dataToSend = {}; 
+                                }
                             }
+                                
+                            // Panggil updateDocumentOcrAndAnnotations di PHP (nama method di EditSuratMasuks.php)
+                            // Tidak perlu documentIndex, karena PHP sudah tahu record mana yang sedang diedit ($this->record)
+                            $wire.updateData( 
+                                finalOcr,
+                                dataToSend
+                            );
+                        },
+                        init() {
+                            console.log('--- Alpine x-data scope initialized! ---');
+                            
+                            // Watcher untuk properti 'ocr' di Alpine
+                            this.$watch('ocr', (newOcr) => {
+                                if (newOcr) {
+                                    console.log('OCR property changed in Alpine! Re-rendering highlights.');
+                                    this.$nextTick(() => {
+                                        // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
+                                        ocrContentDiv = document.getElementById('ocr-content'); 
+                                        renderHighlights();
+                                    });
+                                }
+                            });
 
-                            // Listener untuk perubahan teks manual di div contenteditable
-                            ocrContentDiv.addEventListener('input', () => {
-                                console.log('OCR content changed in Alpine! Preparing to sync...');
-
-                                // Ambil innerHTML yang baru, bersihkan semua tag <mark>
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = ocrContentDiv.innerHTML;
-                                tempDiv.querySelectorAll('mark').forEach(mark => {
-                                    mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
+                            // Watcher untuk properti 'annotations' di Alpine
+                            this.$watch('annotations', (newAnnotations) => {
+                                console.log('Annotations property changed in Alpine! Re-rendering highlights.');
+                                this.$nextTick(() => {
+                                    // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
+                                    ocrContentDiv = document.getElementById('ocr-content'); 
+                                    renderHighlights();
                                 });
-                                
-                                // Update property 'ocr' di Alpine. Ini akan memicu watcher dan renderHighlights.
-                                this.ocr = tempDiv.innerHTML; 
-                                
-                                // Kirim perubahan OCR (teks yang diedit) dan anotasi ke Livewire.
-                                this.dispatchUpdate(this.ocr, this.annotations); 
-                                renderHighlights();
+                            }, { deep: true }); // Watch deeply for changes within the object
+                            
+                            // Event Livewire yang menerima data OCR dan anotasi dari backend
+                            // Dipicu dari mount() PHP
+                            this.$wire.on('ocr-loaded', ({ ocr, extracted_fields }) => {
+                                console.log('Livewire ocr-loaded event received for viewer. Updating OCR and annotations.');
+                                this.annotations = extracted_fields; // PHP sudah kirim sebagai array/object yang benar
+                                this.ocr = ocr; 
+                                this.isSaving = false; // Sembunyikan loading jika data awal dimuat
+                            });
+
+                            // Listener untuk event dari Livewire setelah penyimpanan selesai (updateData di PHP)
+                            this.$wire.on('document-update-completed', () => {
+                                console.log('Livewire: document-update-completed event received. Starting delayed highlight render.');
+                                this.isSaving = false; // Sembunyikan indikator loading
+                                setTimeout(() => {
+                                    // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
+                                    ocrContentDiv = document.getElementById('ocr-content'); 
+                                    renderHighlights(); 
+                                    console.log('Delayed renderHighlights finished.');
+                                }, 500); 
+                            });
+                            
+                            // Event Listener untuk Perubahan Input Teks di OCR Div
+                            this.$nextTick(() => {
+                                ocrContentDiv = document.getElementById('ocr-content'); // Inisialisasi ocrContentDiv di sini juga
+                                if (ocrContentDiv) {
+                                    // Initial render highlights jika data OCR sudah ada saat inisialisasi Alpine
+                                    if (this.ocr) {
+                                        console.log('Initial OCR present in Alpine. Rendering highlights.');
+                                        renderHighlights();
+                                    }
+
+                                    // Listener untuk perubahan teks manual di div contenteditable
+                                    ocrContentDiv.addEventListener('input', () => {
+                                        console.log('OCR content changed in Alpine! Preparing to sync...');
+
+                                        // Ambil innerHTML yang baru, bersihkan semua tag <mark>
+                                        const tempDiv = document.createElement('div');
+                                        tempDiv.innerHTML = ocrContentDiv.innerHTML;
+                                        tempDiv.querySelectorAll('mark').forEach(mark => {
+                                            mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
+                                        });
+                                        
+                                        // Update property 'ocr' di Alpine. Ini akan memicu watcher dan renderHighlights.
+                                        this.ocr = tempDiv.innerHTML; 
+                                        
+                                        // Kirim perubahan OCR (teks yang diedit) dan anotasi ke Livewire.
+                                        this.dispatchUpdate(this.ocr, this.annotations); 
+                                        renderHighlights();
+                                    });
+                                }
                             });
                         }
-                    });
-                }
-            }">
-                <div x-show="isSaving" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-                    <span class="ml-2 text-gray-700">Menyimpan perubahan...</span>
-                </div>
+                    }">
+                        <div x-show="isSaving" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                            <span class="ml-2 text-gray-700">Menyimpan perubahan...</span>
+                        </div>
 
-                <div
-                    id="ocr-content"
-                    contenteditable="true"
-                    class="p-4 min-h-[200px] border rounded bg-gray-50 mb-6 whitespace-pre-wrap"
-                    x-html="ocr" 
-                ></div>
-            
-                {{-- Hidden input untuk annotations. x-model harus di dalam div x-data --}}
-                <input type="hidden" id="annotations-input" x-model="annotations" /> 
-            </div> {{-- Tutup div#ocr-viewer-container di sini --}}
+                        <div
+                            id="ocr-content"
+                            contenteditable="true"
+                            class="p-4 min-h-[200px] border rounded bg-gray-50 whitespace-pre-wrap"
+                            x-html="ocr" 
+                        ></div>
+                    
+                        <input type="hidden" id="annotations-input" x-model="annotations" /> 
+                </div>
+            </div>
+            <div class="flex-1"> 
+                <div class="white-space-pre-wrap border border-gray-300 rounded-lg bg-white overflow-hidden h-full">
+                    <iframe 
+                        src="{{ asset('storage/suratMasuk/' . $this->record->pdf_url) }}" 
+                        class="w-full h-full" 
+                        frameborder="0"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
         
         <template id="annotation-modal">
             <div class="modal-overlay fixed inset-0 z-[9999] bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">

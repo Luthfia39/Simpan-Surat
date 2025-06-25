@@ -19,9 +19,8 @@ class ViewSuratMasuk extends ViewRecord
             ->schema([
                 TextEntry::make('Nomor Surat')
                     ->getStateUsing(fn ($record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
-                        ? $decodedFields['nomor_surat']['text']
-                        : '-'
+                        $record->extracted_fields['nomor_surat']['text']
+                        ?? '-'
                         )
                     ->icon('heroicon-o-hashtag'),
 
@@ -37,26 +36,22 @@ class ViewSuratMasuk extends ViewRecord
 
                 TextEntry::make('Penanda Tangan')
                     ->getStateUsing(fn ($record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['ttd_surat']['text']))
-                        ? $decodedFields['ttd_surat']['text']
-                        : '-'
+                        $record->extracted_fields['ttd_surat']['text']
+                        ?? '-'
                     )
                     ->icon('heroicon-o-user'),
                     
                 TextEntry::make('Tanggal pembuatan')
                     ->getStateUsing(fn ($record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['tanggal']['text']))
-                        ? $decodedFields['tanggal']['text']
-                        : '-'
+                        $record->extracted_fields['tanggal']['text']
+                        ?? '-'
                     )
                     ->badge()
                     ->color('warning'),
 
                 TextEntry::make('Isi Surat')
-                    ->getStateUsing(fn ($record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['isi_surat']['text']))
-                        ? $decodedFields['isi_surat']['text']
-                        : '-'
+                    ->getStateUsing(fn ($record): ?string =>
+                        $record->extracted_fields['isi_surat']['text'] ?? '-'
                     )
                     ->columnSpanFull()
                     ->extraAttributes(['class' => 'text-justify']),

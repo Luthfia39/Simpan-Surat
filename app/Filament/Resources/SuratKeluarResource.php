@@ -23,6 +23,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 
 use App\Enums\Major;
+use Carbon\Carbon;
 
 class SuratKeluarResource extends Resource
 {
@@ -83,9 +84,25 @@ class SuratKeluarResource extends Resource
 
                 TextColumn::make('created_at')
                     ->label('Waktu Pembuatan')
-                    ->date_format('d M Y')
-                    ->sortable()
-                    ->searchable(),
+                    ->getStateUsing(function ($record): ?string {
+                        // Jika created_at itu adalah kolom timestamp langsung dari DB
+                        if ($record->created_at instanceof \DateTimeInterface) {
+                            // Menggunakan Carbon untuk format lokal
+                            return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
+                        }
+                        // Jika tanggal ada di extracted_fields (misal 'tanggal' dari OCR)
+                        // dan kamu ingin menggunakan itu, pastikan itu sudah string tanggal yang valid.
+                        if (is_array($record->extracted_fields) && isset($record->extracted_fields['tanggal']['text'])) {
+                            try {
+                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')->translatedFormat('l, j F Y');
+                            } catch (\Exception $e) {
+                                // Jika parsing gagal, kembalikan teks aslinya atau null
+                                return $record->extracted_at['tanggal']['text'] ?? null;
+                            }
+                        }
+                        return '-'; // Default jika tidak ada data
+                    })
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('prodi')
