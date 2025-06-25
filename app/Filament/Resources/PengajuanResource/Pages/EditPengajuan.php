@@ -81,7 +81,7 @@ class EditPengajuan extends EditRecord
 
                             $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
                             Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
-                            $pdfUrl = Storage::disk('public')->url('surat_keluar/' . $pdfFileName);
+                            // $pdfUrl = Storage::disk('public')->url('surat_keluar/' . $pdfFileName);
 
                         } catch (\Exception $e) {
                              Notification::make()
@@ -96,7 +96,7 @@ class EditPengajuan extends EditRecord
                         $suratKeluar = \App\Models\SuratKeluar::create([
                             'nomor_surat' => $nomorSurat,
                             'prodi' => $prodiUser, // Ini adalah prodi yang tersimpan di SuratKeluar (dari user)
-                            'pdf_url' => $pdfUrl,
+                            'pdf_url' => $pdfFileName,
                             'template_id' => $templateData->_id,
                             'pengajuan_id' => $record->_id,
                             'metadata' => $dataSurat // Tetap simpan semua data_surat sebagai metadata
@@ -113,7 +113,7 @@ class EditPengajuan extends EditRecord
 
                         Notification::make()
                             ->title('Surat Keluar Berhasil Dibuat')
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . $pdfUrl . '" target="_blank" class="underline">Lihat PDF</a>')
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="http://127.0.0.1:8000/storage/surat_keluar/' . $pdfFileName . '" target="_blank" class="underline">Lihat PDF</a>')
                             ->success()
                             ->send();
 

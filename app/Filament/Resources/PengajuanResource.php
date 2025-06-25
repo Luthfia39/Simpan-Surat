@@ -105,16 +105,20 @@ class PengajuanResource extends Resource
                                     ->preload()
                                     ->disabled(),
 
-                                Forms\Components\Select::make('template_id')
+                                    Select::make('template_id')
                                     ->label('Pilih Template Surat')
-                                    ->relationship('template', 'name')
+                                    ->relationship(
+                                        name: 'template', 
+                                        titleAttribute: 'name', 
+                                        modifyQueryUsing: fn (Builder $query) => $query->where('for_user', true),
+                                    )
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(function (Set $set) {
-                                        $set('data_surat', []);
+                                        $set('data_surat', []); 
                                         $set('data_surat.link_files', []);
                                     })
-                                    ->disabled(Auth::user()->is_admin)
+                                    ->disabled(Auth::user()->is_admin) 
                                     ->searchable()
                                     ->preload(),
                             ])->columns(2),
@@ -379,7 +383,11 @@ class PengajuanResource extends Resource
                                                 }
                                                 return false;
                                             }),
-                                    ])->columnSpanFull(),
+                                    ])
+                                    ->columnSpanFull()
+                                    ->visible(function (?\App\Models\Pengajuan $record) {
+                                        return $record->template->name === 'Rekomendasi Beasiswa' || $record->template->name === 'Keterangan Aktif Kuliah';
+                                    }),
                                 ])
                                 ->columns(2)
                                 ->visibleOn('view')
@@ -416,6 +424,7 @@ class PengajuanResource extends Resource
                     ->label('Nama Pengaju (Surat)')
                     ->searchable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
@@ -437,104 +446,115 @@ class PengajuanResource extends Resource
                         return $query;
                     }),
             ])
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                // Periksa apakah pengguna yang sedang login adalah admin
+                if (Auth::user() && !Auth::user()->is_admin) {
+                    // Jika bukan admin, filter berdasarkan user_id pengajuan
+                    $query->where('user_id', auth()->user()->id);
+                }
+                return $query;
+            })
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
+                    ->label('Buat Surat Keluar')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('success')
                     ->visible(fn (\App\Models\Pengajuan $record): bool =>
                         auth()->user()->is_admin &&
                         ($record->status !== 'selesai' && $record->status !== 'ditolak')
                     ),
-                Tables\Actions\Action::make('createSuratKeluar')
-                    ->label('Buat Surat Keluar')
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Buat Surat Keluar?')
-                    ->modalDescription('Ini akan membuat dokumen surat keluar dan memperbarui status pengajuan.')
-                    ->modalSubmitActionLabel('Konfirmasi Buat Surat')
-                    ->action(function (Pengajuan $record) {
-                        try {
-                            $userData = $record->user;
-                            $templateData = $record->template;
-                            $dataSurat = $record->data_surat; 
+                // Tables\Actions\Action::make('createSuratKeluar')
+                //     ->label('Buat Surat Keluar')
+                //     ->icon('heroicon-o-arrow-top-right-on-square')
+                //     ->color('success')
+                //     ->requiresConfirmation()
+                //     ->modalHeading('Buat Surat Keluar?')
+                //     ->modalDescription('Ini akan membuat dokumen surat keluar dan memperbarui status pengajuan.')
+                //     ->modalSubmitActionLabel('Konfirmasi Buat Surat')
+                //     ->action(function (Pengajuan $record) {
+                //         try {
+                //             $userData = $record->user;
+                //             $templateData = $record->template;
+                //             $dataSurat = $record->data_surat; 
     
-                            if (!$userData || !$templateData) {
-                                Notification::make()
-                                    ->title('Error')
-                                    ->body('Pengajuan tidak memiliki pengguna atau template yang valid.')
-                                    ->danger()
-                                    ->send();
-                                return;
-                            }
+                //             if (!$userData || !$templateData) {
+                //                 Notification::make()
+                //                     ->title('Error')
+                //                     ->body('Pengajuan tidak memiliki pengguna atau template yang valid.')
+                //                     ->danger()
+                //                     ->send();
+                //                 return;
+                //             }
     
-                            $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
-                            $prodiUser = $userData->major['kode'] ?? 'N/A'; 
+                //             $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
+                //             $prodiUser = $userData->major['kode'] ?? 'N/A'; 
     
-                            $pdfPath = null;
-                            try {
-                                $viewData = [
-                                    'pengajuan' => $record,
-                                    'user' => $userData,
-                                    'template' => $templateData,
-                                    'linkFiles' => $dataSurat['link_files'] ?? [] 
-                                ];
+                //             $pdfPath = null;
+                //             try {
+                //                 $viewData = [
+                //                     'pengajuan' => $record,
+                //                     'user' => $userData,
+                //                     'template' => $templateData,
+                //                     'linkFiles' => $dataSurat['link_files'] ?? [] 
+                //                 ];
     
-                                foreach ($dataSurat as $key => $value) {
-                                    if (!in_array($key, ['link_files'])) {
-                                        $viewData[$key] = $value;
-                                    }
-                                }
-                                $viewData['prodi'] = $dataSurat['prodi'] ?? $prodiUser;
+                //                 foreach ($dataSurat as $key => $value) {
+                //                     if (!in_array($key, ['link_files'])) {
+                //                         $viewData[$key] = $value;
+                //                     }
+                //                 }
+                //                 $viewData['prodi'] = $dataSurat['prodi'] ?? $prodiUser;
     
     
-                                $pdfContent = view('templates.' . $templateData->class_name, $viewData)->render();
+                //                 $pdfContent = view('templates.' . $templateData->class_name, $viewData)->render();
     
-                                $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
-                                Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
+                //                 $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
+                //                 Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
     
-                            } catch (\Exception $e) {
-                                 Notification::make()
-                                    ->title('Gagal Membuat PDF')
-                                    ->body('Terjadi kesalahan saat merender PDF: ' . $e->getMessage())
-                                    ->danger()
-                                    ->send();
-                                return;
-                            }
+                //             } catch (\Exception $e) {
+                //                  Notification::make()
+                //                     ->title('Gagal Membuat PDF')
+                //                     ->body('Terjadi kesalahan saat merender PDF: ' . $e->getMessage())
+                //                     ->danger()
+                //                     ->send();
+                //                 return;
+                //             }
 
-                            $suratKeluar = \App\Models\SuratKeluar::create([
-                                'nomor_surat' => $nomorSurat,
-                                'prodi' => $prodiUser, 
-                                'pdf_url' => $pdfFileName,
-                                'template_id' => $templateData->_id,
-                                'pengajuan_id' => $record->_id,
-                                'metadata' => $dataSurat 
-                            ]);
+                //             $suratKeluar = \App\Models\SuratKeluar::create([
+                //                 'nomor_surat' => $nomorSurat,
+                //                 'prodi' => $prodiUser, 
+                //                 'pdf_url' => $pdfFileName,
+                //                 'template_id' => $templateData->_id,
+                //                 'pengajuan_id' => $record->_id,
+                //                 'metadata' => $dataSurat 
+                //             ]);
     
-                            $updateData = [
-                                'surat_keluar_id' => $suratKeluar->_id,
-                            ];
-                            if ($record->status !== 'selesai') {
-                                $updateData['status'] = 'selesai';
-                            }
-                            $record->update($updateData);
+                //             $updateData = [
+                //                 'surat_keluar_id' => $suratKeluar->_id,
+                //             ];
+                //             if ($record->status !== 'selesai') {
+                //                 $updateData['status'] = 'selesai';
+                //             }
+                //             $record->update($updateData);
     
-                            Notification::make()
-                                ->title('Surat Keluar Berhasil Dibuat')
-                                ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . $pdfUrl . '" target="_blank" class="underline">Lihat PDF</a>')
-                                ->success()
-                                ->send();
+                //             Notification::make()
+                //                 ->title('Surat Keluar Berhasil Dibuat')
+                //                 ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . $pdfUrl . '" target="_blank" class="underline">Lihat PDF</a>')
+                //                 ->success()
+                //                 ->send();
     
-                            return redirect()->route('filament.admin.resources.pengajuans.edit', ['record' => $record->getKey()]);
+                //             return redirect()->route('filament.admin.resources.pengajuans.edit', ['record' => $record->getKey()]);
     
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Gagal Membuat Surat Keluar')
-                                ->body('Terjadi kesalahan: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    })
-                    ->visible(fn (\App\Models\Pengajuan $record): bool => $record->status !== 'selesai' && !$record->surat_keluar_id && Auth::user()->is_admin),
+                //         } catch (\Exception $e) {
+                //             Notification::make()
+                //                 ->title('Gagal Membuat Surat Keluar')
+                //                 ->body('Terjadi kesalahan: ' . $e->getMessage())
+                //                 ->danger()
+                //                 ->send();
+                //         }
+                //     })
+                //     ->visible(fn (\App\Models\Pengajuan $record): bool => $record->status !== 'selesai' && !$record->surat_keluar_id && Auth::user()->is_admin),
             ])
             ->bulkActions([ ]);
     }
