@@ -40,45 +40,46 @@ class EditTemplate extends EditRecord
                 // Bagian ini akan menampilkan input-input dinamis
                 Section::make('Data Surat ' . ($this->record->name ? $this->record->name :''))
                     ->description('Silakan isi data yang dibutuhkan untuk surat ini.')
-                    // Fungsi ini akan dieksekusi untuk membangun schema form
-                    // $record di sini adalah instance model dari record yang sedang dibuat/diedit (misal model Surat atau PermintaanSurat)
                     ->schema(function (\App\Models\Template $record): array {
-                        // Ambil `template_id` yang dipilih oleh pengguna (jika ada dropdown template di form ini)
-                        // Atau, jika template sudah fix, ambil langsung dari DB
 
                         $fields = [];
-                        // Iterasi melalui skema form yang didefinisikan di template
                         foreach ($record->form_schema as $fieldConfig) {
-                            // Nama field di database (misal: data_surat.nama_lengkap)
-                            // Ini akan menjadi path untuk menyimpan data input pengguna
                             $fieldName = 'data_surat.' . $fieldConfig['name']; 
 
                             $filamentComponent = null;
 
-                            // --- PENANGANAN TIPE INPUT KHUSUS / CUSTOM COMPONENT ---
-                            if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { // Cek NimInput ada
+                            if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { 
                                 $filamentComponent = NimInput::make($fieldName)
                                     ->validationAttribute('NIM')
                                     ->format();
-                            } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                            } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { 
                                 $filamentComponent = IpkInput::make($fieldName)
                                     ->validationAttribute('IPK')
                                     ->format();
                             } elseif ($fieldConfig['name'] === 'thn_akademik') {
-                                $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
+                                $filamentComponent = TextInput::make($fieldName)
+                                    ->mask('9999/9999')
+                                    ->rules([
+                                        'required',
+                                        'regex:/^\d{4}\/\d{4}$/', 
+                                        function ($attribute, $value, $fail) {
+                                            [$year1, $year2] = explode('/', $value);
+                                
+                                            if ((int)$year2 !== (int)$year1 + 1) {
+                                                $fail("Tahun kedua harus merupakan tahun pertama ditambah 1. Contoh: 2024/2025");
+                                            }
+                                        },
+                                    ]);
                             } elseif ($fieldConfig['name'] === 'nip') {
                                 $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
                             }
                             
                             elseif ($fieldConfig['type'] === 'repeater') {
-                                // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
                                 $subFieldsSchema = [];
-                                // Iterasi melalui `sub_schema` yang didefinisikan di Template
                                 foreach ($fieldConfig['sub_schema'] ?? [] as $subFieldConfig) {
-                                    $subFieldName = $fieldName . '.' . $subFieldConfig['name']; // Path untuk sub-field (misal: data_surat.kelompok.0.nama)
+                                    $subFieldName = $fieldName . '.' . $subFieldConfig['name']; 
                                     $subFilamentComponent = null;
 
-                                    // Penanganan tipe input untuk sub-field
                                     switch ($subFieldConfig['type']) {
                                         case 'textarea':
                                             $subFilamentComponent = Textarea::make($subFieldName);
@@ -107,7 +108,6 @@ class EditTemplate extends EditRecord
                                             ->placeholder('00/000000/SV/00000')
                                             ->mask('99/999999/aa/99999')
                                             ->regex('/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/');
-                                            // dd($subFilamentComponent);
                                     } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
                                         $subFilamentComponent = IpkInput::make($subFieldName)
                                             ->validationAttribute('IPK')
@@ -150,7 +150,7 @@ class EditTemplate extends EditRecord
                                         $filamentComponent = Textarea::make($fieldName);
                                         break;
                                     case 'number':
-                                        $filamentComponent = TextInput::make($fieldName)->numeric();
+                                        $filamentComponent = TextInput::make($fieldName)->numeric()->minValue(1);
                                         break;
                                     case 'date':
                                         $filamentComponent = DatePicker::make($fieldName);
@@ -198,7 +198,7 @@ class EditTemplate extends EditRecord
                 ->modalHeading('Generate Surat Keluar?')
                 ->modalDescription('Ini akan membuat dokumen surat keluar, pastikan data yang Anda masukkan sudah sesuai.')
                 ->modalSubmitActionLabel('Konfirmasi Generate')
-                ->action(function () { // <-- Mengubah parameter dari Template $record menjadi kosong
+                ->action(function () {
                     // Akses $this->record untuk model Template yang sedang diedit
                     $templateRecord = $this->record;
                     // Akses data form dari $this->data
@@ -253,10 +253,10 @@ class EditTemplate extends EditRecord
                         $suratKeluar = \App\Models\SuratKeluar::create([
                             'nomor_surat' => $nomorSurat,
                             'prodi' => $prodiSurat,
-                            'pdf_url' => $pdfFileName, // Simpan hanya nama file
+                            'pdf_url' => $pdfFileName, 
                             'template_id' => $templateRecord->_id,
-                            'pengajuan_id' => null, // Tidak ada pengajuan yang terkait langsung dari sini
-                            'metadata' => $dataSuratFromForm // Simpan semua data input sebagai metadata
+                            'pengajuan_id' => null, 
+                            'metadata' => $dataSuratFromForm 
                         ]);
 
                         Notification::make()
@@ -266,7 +266,7 @@ class EditTemplate extends EditRecord
                             ->send();
 
                         // Redirect ke halaman daftar template
-                        return redirect()->route('filament.admin.resources.templates.index');
+                        // return redirect()->route('filament.admin.resources.templates.index');
 
                     } catch (\Exception $e) {
                         Notification::make()

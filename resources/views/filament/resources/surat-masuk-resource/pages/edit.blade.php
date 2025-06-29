@@ -2,7 +2,38 @@
     <x-filament-panels::form wire:submit="callHook('onProcessSave')"> {{-- Gunakan wire:submit untuk memanggil aksi simpan --}}
         {{ $this->form }}
 
-        <h3 class="text-lg font-semibold mb-2 mt-6">Pratinjau Teks OCR & Anotasi:</h3>
+        <p class="text-sm font-semibold">Pratinjau Teks OCR & Anotasi:</p>
+        
+        <div class="p-3 bg-gray-100 rounded-md">
+            <p class="text-sm font-medium text-gray-700 mb-2">Keterangan Warna Anotasi:</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full mr-1" style="background-color: #ffeb3b;"></span>
+                    Nomor Surat
+                </span>
+                <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full mr-1" style="background-color: #4caf50;"></span>
+                    Isi Surat
+                </span>
+                <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full mr-1" style="background-color: #2196f3;"></span>
+                    Penanda Tangan
+                </span>
+                <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full mr-1" style="background-color: #f57c00;"></span>
+                    Tanggal
+                </span>
+            </div>
+            <p class="text-sm mt-2">
+                Langkah - langkah anotasi teks dapat dilihat pada
+                <span>
+                    <a href="javascript:void(0)" onclick="showOcrHelpModal()" style="text-decoration: underline; color:rgb(22, 140, 237)">
+                        panduan anotasi teks OCR.
+                    </a>
+                </span>
+            </p>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-4">
             <div class="flex-1">
                 <div 
@@ -11,12 +42,10 @@
                         // Properti Alpine di-entangle langsung dari Livewire
                         ocr: @entangle('ocr'),
                         annotations: @entangle('annotations'),
-                        isSaving: false, // Indikator loading
 
                         // Method untuk mengirim update ke Livewire
                         // Ini dipanggil oleh saveAnnotation() dan click MARK delete
                         dispatchUpdate: function(finalOcr, finalAnnotations) {
-                            this.isSaving = true; // Aktifkan indikator loading
                             console.log('Dispatching update to Livewire. OCR length:', finalOcr.length, 'Annotations count:', Object.keys(finalAnnotations).length);
                             
                             let dataToSend = finalAnnotations;
@@ -68,13 +97,11 @@
                                 console.log('Livewire ocr-loaded event received for viewer. Updating OCR and annotations.');
                                 this.annotations = extracted_fields; // PHP sudah kirim sebagai array/object yang benar
                                 this.ocr = ocr; 
-                                this.isSaving = false; // Sembunyikan loading jika data awal dimuat
                             });
 
                             // Listener untuk event dari Livewire setelah penyimpanan selesai (updateData di PHP)
                             this.$wire.on('document-update-completed', () => {
                                 console.log('Livewire: document-update-completed event received. Starting delayed highlight render.');
-                                this.isSaving = false; // Sembunyikan indikator loading
                                 setTimeout(() => {
                                     // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
                                     ocrContentDiv = document.getElementById('ocr-content'); 
@@ -115,10 +142,6 @@
                             });
                         }
                     }">
-                        <div x-show="isSaving" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-                            <span class="ml-2 text-gray-700">Menyimpan perubahan...</span>
-                        </div>
 
                         <div
                             id="ocr-content"
@@ -142,7 +165,7 @@
         </div>
         
         <template id="annotation-modal">
-            <div class="modal-overlay fixed inset-0 z-[9999] bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">
+            <div class="modal-overlay fixed inset-0 z-[9999] bg-gray-500 bg-opacity-60 backdrop-blur-sm flex items-center justify-center animate-fade-in-down">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-80 text-center">
                     <h3>Pilih Jenis Kalimat/Kata</h3>
                     <select id="type-dropdown" class="block w-full mt-2 mb-4 border-gray-300 rounded">
@@ -166,6 +189,7 @@
 
         <x-filament-panels::form.actions :actions="$this->getFormActions()" />
     </x-filament-panels::form>
+    <x-ocr-help-modal />
 
     @push('scripts')
         <script>
