@@ -39,13 +39,13 @@
         {{$pekerjaan}}
       </x-info-item>
       <x-info-item label="NIP">
-        {{$nip}}
+        {{$nip ?? '-'}}
       </x-info-item>
       <x-info-item label="Pangkat/Gol">
-        {{$pangkat}}
+        {{$pangkat ?? '-'}}
       </x-info-item>
       <x-info-item label="Instansi">
-        {{$instansi}}
+        {{$instansi ?? '-'}}
       </x-info-item>
     </x-info-list>
 
