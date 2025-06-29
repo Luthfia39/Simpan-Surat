@@ -23,11 +23,10 @@ class EditPengajuan extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
             // Aksi Generate Surat Keluar, hanya terlihat jika kondisi terpenuhi
             Actions\Action::make('generateSuratKeluar')
                 ->label('Generate Surat Keluar')
-                ->icon('heroicon-s-document-arrow-down')
+                ->icon('heroicon-s-document-arrow-up')
                 ->color('success')
                 ->requiresConfirmation()
                 ->modalHeading('Generate Surat Keluar?')
@@ -37,7 +36,7 @@ class EditPengajuan extends EditRecord
                     try {
                         $userData = $record->user;
                         $templateData = $record->template;
-                        $dataSurat = $record->data_surat; // Ini adalah array PHP dari data input template
+                        $dataSurat = $record->data_surat; 
 
                         if (!$userData || !$templateData) {
                             Notification::make()
@@ -48,40 +47,29 @@ class EditPengajuan extends EditRecord
                             return;
                         }
 
-                        // Prioritaskan nomor surat dari admin yang diisi di data_surat
-                        // Jika tidak ada, fallback ke generate otomatis
-                        $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
-                        $prodiUser = $userData->major['kode'] ?? 'N/A'; // Prodi dari data user
+                        $nomorSurat = 'NO.'. ($dataSurat['nomor_surat']  ?? 'AUTO') . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
+                        $prodiUser = $userData->major['kode'] ?? 'N/A';
 
-                        $pdfPath = null;
+                        $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
+                        $pdfFilePathInStorage = 'surat_keluar/' . $pdfFileName; // Path relatif di storage
+                        
                         try {
-                            // --- KUNCI PERUBAHAN DI SINI ---
-                            // Bongkar array $dataSurat menjadi variabel individual untuk Blade
                             $viewData = [
                                 'pengajuan' => $record,
                                 'user' => $userData,
                                 'template' => $templateData,
-                                'linkFiles' => $dataSurat['link_files'] ?? [] // Link file yang diupload
+                                'linkFiles' => $dataSurat['link_files'] ?? []
                             ];
 
-                            // Tambahkan semua isi $dataSurat langsung ke $viewData
-                            // Ini akan membuat $nama, $nim, $prodi (dari data_surat), $nama_ortu, dll., tersedia
                             foreach ($dataSurat as $key => $value) {
-                                // Hindari menimpa variabel yang sudah ada seperti 'linkFiles'
                                 if (!in_array($key, ['link_files'])) {
                                     $viewData[$key] = $value;
                                 }
                             }
-                            // Pastikan variabel $prodi di Blade sesuai dengan yang di-input admin
-                            // Jika $dataSurat punya 'prodi', gunakan itu. Jika tidak, gunakan dari user.
                             $viewData['prodi'] = $dataSurat['prodi'] ?? $prodiUser;
 
-
                             $pdfContent = view('templates.' . $templateData->class_name, $viewData)->render();
-
-                            $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
-                            Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
-                            // $pdfUrl = Storage::disk('public')->url('surat_keluar/' . $pdfFileName);
+                            Storage::disk('public')->put($pdfFilePathInStorage, Pdf::loadHTML($pdfContent)->output());
 
                         } catch (\Exception $e) {
                              Notification::make()
@@ -92,31 +80,44 @@ class EditPengajuan extends EditRecord
                             return;
                         }
 
-                        // Buat record SuratKeluar baru
-                        $suratKeluar = \App\Models\SuratKeluar::create([
-                            'nomor_surat' => $nomorSurat,
-                            'prodi' => $prodiUser, // Ini adalah prodi yang tersimpan di SuratKeluar (dari user)
-                            'pdf_url' => $pdfFileName,
-                            'template_id' => $templateData->_id,
-                            'pengajuan_id' => $record->_id,
-                            'metadata' => $dataSurat // Tetap simpan semua data_surat sebagai metadata
+                        $suratKeluar = \App\Models\SuratKeluar::firstOrNew([
+                            'pengajuan_id' => $record->_id, // Cari berdasarkan pengajuan_id
                         ]);
+
+                        // Jika record_id sudah ada (berarti record ditemukan), hapus file PDF lama
+                        if ($suratKeluar->exists && $suratKeluar->pdf_url) {
+                            Storage::disk('public')->delete('surat_keluar/' . $suratKeluar->pdf_url);
+                            \Log::info('File PDF lama dihapus:', ['file' => $suratKeluar->pdf_url]);
+                        }
+
+                        // Isi properti model dengan data terbaru (akan di-update atau di-create)
+                        $suratKeluar->fill([
+                            'nomor_surat' => $nomorSurat,
+                            'prodi' => $prodiUser,
+                            'pdf_url' => $pdfFileName, // Simpan nama file PDF yang baru
+                            'template_id' => $templateData->_id,
+                            'metadata' => $dataSurat
+                        ]);
+
+                        $suratKeluar->save(); 
 
                         // Perbarui Pengajuan dengan ID Surat Keluar dan Status (jika belum selesai)
                         $updateData = [
-                            'surat_keluar_id' => $suratKeluar->_id,
+                            'surat_keluar_id' => $suratKeluar->_id, // Akan menunjuk ke _id SuratKeluar yang di-update/dibuat
                         ];
-                        if ($record->status !== 'selesai') {
-                            $updateData['status'] = 'selesai';
-                        }
+
+                        // if ($record->status !== 'selesai' and $record->template->name !== 'Permohonan Dosen Pengampu (SV)' && $record->template->name !== 'Permohonan Dosen Pengampu (Non-SV)') {
+                        //     $updateData['status'] = 'selesai';
+                        // }
                         $record->update($updateData);
 
                         Notification::make()
-                            ->title('Surat Keluar Berhasil Dibuat')
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="http://127.0.0.1:8000/storage/surat_keluar/' . $pdfFileName . '" target="_blank" class="underline">Lihat PDF</a>')
+                            ->title('Surat Keluar Berhasil Dibuat/Diperbarui')
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . asset('storage/' . $pdfFilePathInStorage) . '" target="_blank" class="underline">Lihat PDF</a>')
                             ->success()
                             ->send();
 
+                        // Redirect kembali ke halaman pengajuan yang sedang diedit
                         return redirect()->route('filament.admin.resources.pengajuans.edit', ['record' => $record->getKey()]);
 
                     } catch (\Exception $e) {
@@ -127,11 +128,9 @@ class EditPengajuan extends EditRecord
                             ->send();
                     }
                 })
-                // --- Kondisi Visibilitas Tombol Kunci ---
                 ->visible(fn (Pengajuan $record): bool =>
-                    auth()->user()->is_admin &&          // Hanya admin
-                    $record->status === 'diproses' &&     // Hanya jika status 'diproses'
-                    !$record->surat_keluar_id             // Dan belum ada surat keluar yang terkait
+                    auth()->user()->is_admin &&
+                    $record->status === 'diproses'
                 ),
         ];
     }
