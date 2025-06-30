@@ -27,7 +27,7 @@
 
     <x-info-list style="margin-top: 24px">
       <x-info-item label="Nomor">
-        {{ $nomor_surat ?? '1' }}/UN1/SV2-TEDI/AKM/PJ/{{ date("Y") }}
+        {{ $nomor_surat ?? '1' }}/UN1/SV.2-TEDI/AKM/PJ/{{ date("Y") }}
       </x-info-item>
       <x-info-item label="Hal">
         Permohonan Pembukaan Portal Pembayaran UKT

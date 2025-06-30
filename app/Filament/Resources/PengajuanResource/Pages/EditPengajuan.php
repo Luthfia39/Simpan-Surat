@@ -50,7 +50,7 @@ class EditPengajuan extends EditRecord
                         }
 
                         // Menentukan nomor surat. Gunakan nomor_surat dari data_surat jika ada, atau 'AUTO'.
-                        $nomorSurat = 'NO.'. ($dataSurat['nomor_surat']  ?? 'AUTO') . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
+                        $nomorSurat = 'NO.'. ($dataSurat['nomor_surat']  ?? 'AUTO') . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y") ;
                         $prodiUser = $userData->major['kode'] ?? 'N/A';
 
                         // Menentukan nama file PDF dan path penyimpanan untuk draf.

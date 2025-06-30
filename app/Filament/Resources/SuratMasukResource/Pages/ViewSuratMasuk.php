@@ -19,10 +19,10 @@ class ViewSuratMasuk extends ViewRecord
             ->schema([
                 TextEntry::make('Nomor Surat')
                     ->getStateUsing(fn ($record): ?string => 
-                        $record->nomor_surat ?? '-'
-                        // (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
-                        // ? $decodedFields['nomor_surat']['text']
-                        // : '-'
+                        // $record->nomor_surat ?? '-'
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
+                        ? $decodedFields['nomor_surat']['text']
+                        : '-'
                         )
                     ->icon('heroicon-o-hashtag'),
 

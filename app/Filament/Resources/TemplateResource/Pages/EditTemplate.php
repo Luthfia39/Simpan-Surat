@@ -221,7 +221,7 @@ class EditTemplate extends EditRecord
                         }
 
                         // Prioritaskan nomor surat dari data form
-                        $nomorSurat = 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
+                        $nomorSurat = 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y") ;
                         $prodiSurat = $dataSuratFromForm['prodi'] ?? null; // Prodi dari form atau dari user admin
 
                         $pdfPath = null;

@@ -585,7 +585,7 @@ class PengajuanResource extends Resource
                 //                 return;
                 //             }
     
-                //             $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV2-TEDI/AKM/PJ/'. date("Y") ;
+                //             $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y") ;
                 //             $prodiUser = $userData->major['kode'] ?? 'N/A'; 
     
                 //             $pdfPath = null;
