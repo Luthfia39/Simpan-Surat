@@ -174,6 +174,7 @@
                         <option value="isi_surat">Isi Surat</option>
                         <option value="ttd_surat">Penanda Tangan</option>
                         <option value="tanggal">Tanggal</option>
+                        <option value="penerima_surat">Tanggal</option>
                     </select>
                     <button onclick="saveAnnotation()"
                             class="px-4 py-2 bg-[#6C88A4] text-white rounded hover:bg-[#2C3E50] hover:text-white">
@@ -200,7 +201,8 @@
                 nomor_surat: "#ffeb3b",
                 isi_surat: "#4caf50",
                 ttd_surat: "#2196f3",
-                tanggal: "#f57c00"
+                tanggal: "#f57c00",
+                penerima_surat: "#a578f5"
             };
     
             let textNodes = []; 

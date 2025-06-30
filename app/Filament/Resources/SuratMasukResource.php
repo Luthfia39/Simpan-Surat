@@ -61,7 +61,7 @@ class SuratMasukResource extends Resource
                 Select::make('letter_type')
                     ->label('Jenis Surat')
                     ->options([
-                        'Surat Pernyataan' => 'Surat Pernyataan',
+                        'Surat Permohonan' => 'Surat Permohonan',
                         'Surat Keterangan' => 'Surat Keterangan',
                         'Surat Tugas' => 'Surat Tugas',
                         'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
@@ -74,11 +74,11 @@ class SuratMasukResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('task_id')
-                    ->label('Task ID')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // TextColumn::make('task_id')
+                //     ->label('Task ID')
+                //     ->searchable()
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
 
                 BadgeColumn::make('review_status')
                     ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
@@ -118,11 +118,20 @@ class SuratMasukResource extends Resource
                 TextColumn::make('pengirim')
                     ->label('Pengirim/Penerima')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['pengirim']['text']))
-                        ? $decodedFields['pengirim']['text']
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['penerima_surat']['text']))
+                        ? $decodedFields['penerima_surat']['text']
                         : null
                     )
                     ->default('-')
+                    ->width('w-px')
+                    ->limit($keteranganLimit = 20) // Memotong teks setelah 50 karakter
+                    ->tooltip(function (string $state) use ($keteranganLimit): ?string { // Gunakan 'use' untuk membawa variabel ke closure
+                        // Tampilkan tooltip hanya jika teks lebih panjang dari batas yang kita tetapkan
+                        if (strlen($state) > $keteranganLimit) {
+                            return $state;
+                        }
+                        return null;
+                    })
                     ->searchable(),
 
                 TextColumn::make('created_at')
@@ -132,7 +141,6 @@ class SuratMasukResource extends Resource
                         ? $decodedFields['tanggal']['text']
                         : null
                     )
-                    // ->date('d F Y') // atau ->dateTime()
                     ->sortable(),
             ])
             ->filters([
@@ -142,6 +150,7 @@ class SuratMasukResource extends Resource
                         'Surat Pernyataan' => 'Surat Pernyataan',
                         'Surat Keterangan' => 'Surat Keterangan',
                         'Surat Tugas' => 'Surat Tugas',
+                        'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
                     ]),
                 SelectFilter::make('review_status')
                     ->label('Status Review')
@@ -149,20 +158,7 @@ class SuratMasukResource extends Resource
                         'pending_review' => 'Belum Direview',
                         'in_review' => 'Sedang Direview',
                         'reviewed' => 'Sudah Direview',
-                        'rejected' => 'Ditolak',
                     ])
-                    // ->default('pending_review'),
-            
-                // Filter::make('created_at')
-                //     ->form([
-                //         \Filament\Forms\Components\DatePicker::make('created_from')->label('Tanggal Mulai'),
-                //         \Filament\Forms\Components\DatePicker::make('created_until')->label('Tanggal Sampai'),
-                //     ])
-                //     ->query(fn (Builder $query, array $data) =>
-                //         $query
-                //             ->when($data['created_from'], fn ($q) => $q->whereDate('created_at', '>=', $data['created_from']))
-                //             ->when($data['created_until'], fn ($q) => $q->whereDate('created_at', '<=', $data['created_until']))
-                //     ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

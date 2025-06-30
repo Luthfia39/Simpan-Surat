@@ -53,6 +53,13 @@ class ViewSuratMasuk extends ViewRecord
                     ->badge()
                     ->color('warning'),
 
+                TextEntry::make('Pengirim/Pembuat Surat')
+                    ->getStateUsing(fn ($record): ?string => 
+                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['penerima_surat']['text']))
+                        ? $decodedFields['penerima_surat']['text']
+                        : '-'
+                    ),
+
                 TextEntry::make('Isi Surat')
                     ->getStateUsing(fn ($record): ?string => 
                         (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['isi_surat']['text']))
