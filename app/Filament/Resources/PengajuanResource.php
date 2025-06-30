@@ -356,6 +356,7 @@ class PengajuanResource extends Resource
                                         ->options([
                                             'pending' => 'Pending',
                                             'diproses' => 'Diproses',
+                                            'menunggu_ttd' => 'Menunggu Tanda Tangan',
                                             'selesai' => 'Selesai',
                                             'ditolak' => 'Ditolak',
                                         ])
@@ -368,7 +369,7 @@ class PengajuanResource extends Resource
                                 ])
                                 ->columns(2)
                                 ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'),
-                            Forms\Components\Section::make('Berkas Surat')
+                            Forms\Components\Section::make('Berkas Surat Keluar Final') // Ubah judul section
                                 ->schema([
                                     Forms\Components\Placeholder::make('surat_keluar_status')
                                         ->label('')
@@ -378,53 +379,96 @@ class PengajuanResource extends Resource
                                             }
                                             return 'Belum ada surat keluar.';
                                         })
-                                        ->visibleOn('view') 
-                                        ->hiddenOn('create'), 
-    
+                                        ->visibleOn('view')
+                                        ->hiddenOn('create'),
+
+                                    // FileUpload untuk mengupload surat yang sudah ditandatangani
+                                    FileUpload::make('suratKeluar.pdf_url') // Langsung binding ke relasi suratKeluar dan kolom pdf_url
+                                        ->label('Upload Surat Keluar Final (Sudah Ditandatangani)')
+                                        ->hint('Unggah versi final surat yang sudah ditandatangani basah. Ini akan menimpa surat yang digenerate.')
+                                        ->directory('surat_keluar_final') // Direktori baru untuk PDF final
+                                        ->visibility('public')
+                                        ->acceptedFileTypes(['application/pdf']) // Hanya PDF
+                                        ->maxSize(5120) // Maksimal 5MB (sesuaikan)
+                                        ->preserveFilenames() // Pertahankan nama file asli
+                                        ->downloadable()
+                                        ->openable()
+                                        // Visible hanya jika statusnya 'diproses' atau 'menunggu_ttd' dan ada surat yang digenerate
+                                        ->visible(function (Get $get, ?\App\Models\Pengajuan $record): bool {
+                                            $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists;
+                                            $status = $get('status');
+                                            return auth()->user()->is_admin && in_array($status, ['diproses', 'menunggu_ttd']) && $suratKeluarExists;
+                                        }),
+
+                                    // Aksi download PDF yang sudah diupload/generate
                                     Forms\Components\Actions::make([
-                                        Forms\Components\Actions\Action::make('downloadPdf')
-                                            ->label('Download PDF Surat')
+                                        Forms\Components\Actions\Action::make('downloadFinalPdf') // Ubah nama aksi
+                                            ->label('Download PDF Surat Final')
                                             ->icon('heroicon-o-arrow-down-tray')
                                             ->color('primary')
                                             ->url(function (?\App\Models\Pengajuan $record): string {
-                                                $pdfUrl = '#'; 
-                                                if ($record) {
-                                                    $suratKeluarData = null;
-                                                    if ($record->relationLoaded('suratKeluar') && $record->suratKeluar) {
-                                                        $suratKeluarData = $record->suratKeluar;
-                                                    }
-                                                    elseif (isset($record->suratKeluar) && is_array($record->suratKeluar)) {
-                                                        $suratKeluarData = $record->suratKeluar;
-                                                    }
-    
-                                                    if ($suratKeluarData) {
-                                                        $pdfUrl = $suratKeluarData instanceof \Jenssegers\Mongodb\Eloquent\Model ? $suratKeluarData->pdf_url : ($suratKeluarData['pdf_url'] ?? '#');
-                                                    }
+                                                if ($record && $record->suratKeluar && $record->suratKeluar->pdf_url) {
+                                                    // Asumsi pdf_url di SuratKeluar sudah menyimpan path relatif dari 'public' disk
+                                                    return Storage::disk('public')->url('surat_keluar_final/' . $record->suratKeluar->pdf_url);
                                                 }
-                                                return 'http://127.0.0.1:8000/storage/surat_keluar/'.$pdfUrl;
+                                                return '#';
                                             })
                                             ->openUrlInNewTab()
                                             ->visible(function (?\App\Models\Pengajuan $record) {
-                                                if ($record && $record->getKey()) {
-                                                    $suratKeluarData = null;
-                                                    if ($record->relationLoaded('suratKeluar') && $record->suratKeluar) {
-                                                        $suratKeluarData = $record->suratKeluar;
-                                                    } elseif (isset($record->suratKeluar) && is_array($record->suratKeluar)) {
-                                                        $suratKeluarData = $record->suratKeluar;
+                                                // Tampilkan tombol download jika ada URL PDF di suratKeluar
+                                                return $record && $record->suratKeluar && !empty($record->suratKeluar->pdf_url);
+                                            }),
+
+                                        // Aksi tambahan untuk mengubah status menjadi 'selesai' secara manual
+                                        Forms\Components\Actions\Action::make('markAsSelesai')
+                                            ->label('Tandai Selesai & Kirim Pemberitahuan')
+                                            ->icon('heroicon-o-check-circle')
+                                            ->color('success')
+                                            ->requiresConfirmation()
+                                            ->modalHeading('Tandai Pengajuan Selesai?')
+                                            ->modalDescription('Ini akan menandai pengajuan sebagai "Selesai" dan mengirim notifikasi ke pengaju. Pastikan surat final sudah diunggah.')
+                                            ->modalSubmitActionLabel('Konfirmasi Selesai')
+                                            ->action(function (?\App\Models\Pengajuan $record) {
+                                                if ($record) {
+                                                    // Pastikan ada surat keluar yang terupload sebelum di-set selesai
+                                                    if (!$record->suratKeluar || empty($record->suratKeluar->pdf_url)) {
+                                                        Notification::make()
+                                                            ->title('Gagal')
+                                                            ->body('Tidak dapat menandai selesai. Harap unggah surat final terlebih dahulu.')
+                                                            ->danger()
+                                                            ->send();
+                                                        return;
                                                     }
-                                                    return $suratKeluarData && ($suratKeluarData instanceof \Jenssegers\Mongodb\Eloquent\Model ? !empty($suratKeluarData->pdf_url) : !empty($suratKeluarData['pdf_url']));
+
+                                                    $record->status = 'selesai';
+                                                    $record->save();
+
+                                                    // Kirim notifikasi ke pengaju
+                                                    Notification::make()
+                                                        ->title('Pengajuan Anda Telah Selesai!')
+                                                        ->body('Surat Anda telah selesai diproses dan dapat diunduh. ' . 
+                                                            ($record->suratKeluar->pdf_url ? 'Unduh surat di sini: <a href="' . Storage::disk('public')->url('surat_keluar_final/' . $record->suratKeluar->pdf_url) . '" target="_blank" class="underline">Unduh Surat</a>' : '')
+                                                        )
+                                                        ->success()
+                                                        ->sendTo($record->user);
+
+                                                    Notification::make()
+                                                        ->title('Pengajuan Berhasil Ditandai Selesai')
+                                                        ->success()
+                                                        ->send();
                                                 }
-                                                return false;
+                                            })
+                                            // Visible jika admin dan statusnya bukan 'selesai' dan ada surat yang digenerate/diupload
+                                            ->visible(function (Get $get, ?\App\Models\Pengajuan $record): bool {
+                                                $status = $get('status');
+                                                $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists && !empty($record->suratKeluar->pdf_url);
+                                                return auth()->user()->is_admin && $status !== 'selesai' && $suratKeluarExists;
                                             }),
                                     ])
-                                    ->columnSpanFull()
-                                    ->visible(function (?\App\Models\Pengajuan $record) {
-                                        return $record->template->name === 'Rekomendasi Beasiswa' || $record->template->name === 'Keterangan Aktif Kuliah';
-                                    }),
+                                    ->columnSpanFull(), // Pastikan aksi mengisi seluruh kolom
                                 ])
-                                ->columns(2)
-                                ->visibleOn('view')
-                                ->hiddenOn('create'),
+                                ->columns(1) // Atur kolom untuk section Berkas Surat Keluar Final menjadi 1
+                                ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'), // Tampilkan section ini hanya untuk admin atau saat view
                         ])
                         ->columnSpanFull(),
             ]);
