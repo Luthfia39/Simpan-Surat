@@ -88,6 +88,16 @@ class EditSuratMasuks extends EditRecord
                     'Surat Tugas' => 'Surat Tugas',
                     'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
                 ])
+                ->createOptionForm([ // Ini adalah form yang akan muncul saat membuat opsi baru
+                    TextInput::make('letter_type') // Nama field untuk input kota baru
+                        ->label('Jenis Surat Lainnya')
+                        ->required()
+                        // ->unique('your_cities_table', 'name') // Ganti 'your_cities_table' dan 'name' dengan tabel dan kolom kota Anda
+                        ->maxLength(255),
+                ])
+                ->createOptionUsing(function (array $data) { 
+                    return $data['letter_type']; // Ini nilai yang akan dipilih di Select
+                })
                 ->required(),
             ])
             ->model($this->record)

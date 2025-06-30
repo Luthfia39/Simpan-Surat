@@ -115,16 +115,6 @@ class SuratMasukResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                // TextColumn::make('penanda_tangan')
-                //     ->label('Penanda Tangan')
-                //     ->getStateUsing(fn (Model $record): ?string => 
-                //         (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['ttd_surat']['text']))
-                //         ? $decodedFields['ttd_surat']['text']
-                //         : null
-                //     )
-                //     ->default('-')
-                //     ->searchable(),
-
                 TextColumn::make('pengirim')
                     ->label('Pengirim/Penerima')
                     ->getStateUsing(fn (Model $record): ?string => 
