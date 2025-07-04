@@ -20,11 +20,11 @@ class ListTemplates extends ListRecords
 
     public function getHeading(): string
     {
-        return "Daftar Template Surat";
+        return "Daftar Surat";
     }
 
     public function getSubheading(): string
     {
-        return 'Pilih salah satu template di bawah ini untuk mulai membuat surat.';
+        return 'Pilih salah satu jenis surat di bawah ini untuk mulai membuat surat.';
     }
 }

@@ -35,11 +35,11 @@ class TemplateResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Dasar Template')
-                    ->description('Informasi umum tentang template surat.')
+                Forms\Components\Section::make('Informasi Dasar Jenis Surat')
+                    ->description('Informasi umum tentang jenis surat.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Nama Template')
+                            ->label('Nama Surat')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true, table: Template::class, column: 'name'), // Perbaiki table/column jika unique hanya untuk field 'name' di Template
@@ -51,7 +51,7 @@ class TemplateResource extends Resource
                             ->unique(ignoreRecord: true, table: Template::class, column: 'class_name'), // Perbaiki table/column jika unique hanya untuk field 'class_name' di Template
                         Forms\Components\Toggle::make('for_user')
                             ->label('Tersedia untuk Pengguna Umum')
-                            ->helperText('Jika aktif, template ini akan muncul di daftar pilihan pengguna.')
+                            ->helperText('Jika aktif, surat ini akan muncul di daftar pilihan pengguna.')
                             ->default(true),
                     ])->columns(2),
 
@@ -177,7 +177,7 @@ class TemplateResource extends Resource
                     ]),
 
                 Forms\Components\Section::make('Definisi Berkas yang Dibutuhkan')
-                    ->description('Tentukan file-file yang perlu diunggah pengguna untuk template ini.')
+                    ->description('Tentukan file-file yang perlu diunggah pengguna untuk surat ini.')
                     ->schema([
                         Forms\Components\Repeater::make('required_files')
                             ->label('Berkas yang Dibutuhkan')

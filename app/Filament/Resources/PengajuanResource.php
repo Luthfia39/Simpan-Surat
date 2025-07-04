@@ -461,7 +461,7 @@ class PengajuanResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('template.name')
-                    ->label('Template')
+                    ->label('Jenis Surat')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\BadgeColumn::make('status')

@@ -62,7 +62,7 @@ class SuratKeluarResource extends Resource
                     ->searchable(),
 
                 TextColumn::make('template.name')
-                    ->label('Template')
+                    ->label('Jenis Surat')
                     ->sortable()
                     ->searchable(),
 
