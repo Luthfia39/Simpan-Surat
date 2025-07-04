@@ -24,7 +24,7 @@ class SuratKeluar extends Model
         'template_id',
         'pengajuan_id',
         'metadata',
-        'is_signed'
+        'is_show'
     ];
 
     protected $casts = [
