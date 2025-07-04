@@ -21,6 +21,13 @@ use Filament\Tables\Columns\IconColumn;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\Select;
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 use App\Enums\Major;
 use Carbon\Carbon;
@@ -100,7 +107,7 @@ class SuratKeluarResource extends Resource
                                 return $record->extracted_at['tanggal']['text'] ?? null;
                             }
                         }
-                        return '-'; // Default jika tidak ada data
+                        return '-'; 
                     })
                     ->sortable(),
             ])
@@ -125,6 +132,90 @@ class SuratKeluarResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('markAsSelesaiWithUpload')
+                    ->label('Tandai Selesai')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->modalHeading('Tandai Pengajuan Selesai?')
+                    ->modalDescription('Unggah surat final yang sudah ditandatangani dan tambahkan keterangan. Ini akan mengubah status pengajuan terkait.')
+                    ->form([
+                        Forms\Components\FileUpload::make('final_signed_letter')
+                            ->label('Unggah Surat Final')
+                            ->helperText('Unggah versi final surat yang sudah ditandatangani basah (PDF).')
+                            // ->directory('surat_keluar') 
+                            ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(10240) 
+                            ->preserveFilenames()
+                            ->downloadable()
+                            ->openable()
+                            ->required(fn (Forms\Get $get): bool => $get('completion_method') === 'online_upload')
+                            ->visible(fn (Forms\Get $get): bool => $get('completion_method') === 'online_upload'), 
+                        
+                        Forms\Components\Textarea::make('keterangan_final')
+                            ->label('Keterangan Final')
+                            ->helperText('Tambahkan keterangan tambahan terkait penyelesaian pengajuan. (Contoh: "Surat dapat diambil mulai 5 Juli 2025")')
+                            ->maxLength(65535)
+                            ->required(fn (Forms\Get $get): bool => $get('completion_method') === 'offline_pickup')
+                            ->nullable(fn (Forms\Get $get): bool => $get('completion_method') === 'online_upload'),
+                        
+                        // Dropdown metode penyelesaian
+                        Select::make('completion_method')
+                            ->label('Metode Penyelesaian')
+                            ->options([
+                                'online_upload' => 'Unggah Surat Final (Online)',
+                                'offline_pickup' => 'Ambil Surat di Ruang Akademik (Offline)',
+                            ])
+                            ->default('online_upload')
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set, $state) {
+                                if ($state === 'offline_pickup') {
+                                    $set('final_signed_letter', null); 
+                                }
+                            }),
+                    ])
+                    ->action(function (array $data, SuratKeluar $record) { 
+                        try {
+                            $isOfflinePickup = $data['completion_method'] === 'offline_pickup';
+                            $uploadedFilePath = $data['final_signed_letter'] ?? null; 
+
+                            if ($isOfflinePickup) {
+                                $record->is_show = false;
+                            } else { 
+                                Storage::disk('public')->delete('surat_keluar/' . $record->pdf_url);
+                                $originalFileName = pathinfo($uploadedFilePath, PATHINFO_FILENAME);
+                                $fileExtension = pathinfo($uploadedFilePath, PATHINFO_EXTENSION);
+                                $newSignedFileName = $originalFileName . '_signed.' . $fileExtension;
+                                Storage::disk('public')->move($uploadedFilePath, 'surat_keluar/' . $newSignedFileName);
+
+                                $record->pdf_url = $newSignedFileName; 
+                                $record->is_show = true; 
+                            }
+                            $record->save(); 
+
+                            // Update status dan keterangan di model Pengajuan (melalui relasi)
+                            $pengajuanTerkait = $record->pengajuan;
+                            if ($pengajuanTerkait) {
+                                $pengajuanTerkait->status = 'selesai';
+                                $pengajuanTerkait->keterangan = $data['keterangan_final'];
+                                $pengajuanTerkait->save();
+                                Notification::make()->title('Pengajuan Berhasil Ditandai Selesai')->body('Surat final berhasil diunggah/dicatat dan pengajuan telah ditandai selesai.')->success()->send();
+                            } else {
+                                Notification::make()->title('Peringatan')->body('Surat final berhasil diunggah/dicatat, tetapi tidak ada pengajuan terkait yang ditemukan untuk diupdate statusnya.')->warning()->send();
+                            }
+
+                        } catch (\Throwable $e) {
+                            \Log::error('Error menandai selesai dengan upload di SuratKeluarResource:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString(), 'surat_keluar_id' => $record->id]);
+                            Notification::make()->title('Gagal Menandai Selesai')->body('Terjadi kesalahan: ' . $e->getMessage())->danger()->send();
+                        }
+                    })
+                    
+                    ->visible(fn (Model $record): bool =>
+                        Auth::user()->is_admin && 
+                        $record->pengajuan !== null && 
+                        $record->pengajuan->status === 'menunggu_ttd'
+                    ),
             ])
             ->bulkActions([ ])
             ->defaultSort('created_at', 'desc');
