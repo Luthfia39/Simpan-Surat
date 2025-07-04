@@ -66,7 +66,7 @@ class PengajuanResource extends Resource
                                           ->count();
         }
 
-        return $count > 0 ? (string) $count : null; // Tampilkan badge jika jumlah > 0
+        return $count > 0 ? (string) $count : null; 
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -90,6 +90,7 @@ class PengajuanResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $currentUser = Auth::user();
         return $form
             ->schema([
                 Forms\Components\Group::make()
@@ -106,7 +107,7 @@ class PengajuanResource extends Resource
                                     ->preload()
                                     ->disabled(),
 
-                                    Select::make('template_id')
+                                Select::make('template_id')
                                     ->label('Pilih Jenis Surat')
                                     ->relationship(
                                         name: 'template', 
@@ -115,9 +116,41 @@ class PengajuanResource extends Resource
                                     )
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(function (Set $set) {
-                                        $set('data_surat', []); 
+                                    ->afterStateUpdated(function (Set $set, Get $get) use ($currentUser) {
+                                        $set('data_surat', []); // Reset data_surat
                                         $set('data_surat.link_files', []);
+                                    
+                                        $templateId = $get('template_id');
+                                        if ($templateId) {
+                                            $template = \App\Models\Template::find($templateId);
+                                            if ($template && is_array($template->form_schema)) {
+                                                $currentDataSurat = $get('data_surat') ?? [];
+                                    
+                                                foreach ($template->form_schema as $fieldConfig) {
+                                                    $fieldName = $fieldConfig['name']; // Perhatikan, ini tanpa 'data_surat.' prefix
+                                                    $fieldPath = 'data_surat.' . $fieldName; // Ini path lengkap untuk Set
+                                    
+                                                    $defaultValue = '';
+                                    
+                                                    switch ($fieldName) { // Cek nama field tanpa prefix 'data_surat.'
+                                                        case 'nama':
+                                                            $defaultValue = $currentUser->name;
+                                                            break;
+                                                        case 'nim':
+                                                            $defaultValue = $currentUser->nim;
+                                                            break;
+                                                        case 'prodi':
+                                                            $defaultValue = $currentUser->prodi;
+                                                            break;
+                                                    }
+                                    
+                                                    // Set nilai hanya jika ada default value yang valid dan field belum diisi
+                                                    if ($defaultValue !== '' && (!isset($currentDataSurat[$fieldName]) || $currentDataSurat[$fieldName] === null || $currentDataSurat[$fieldName] === '')) {
+                                                        $set($fieldPath, $defaultValue);
+                                                    }
+                                                }
+                                            }
+                                        }
                                     })
                                     ->disabled(Auth::user()->is_admin) 
                                     ->searchable()
@@ -143,34 +176,16 @@ class PengajuanResource extends Resource
 
                                         $filamentComponent = null;
 
-                                        if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { // Cek NimInput ada
+                                        if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { 
                                             $filamentComponent = NimInput::make($fieldName)
                                                 ->validationAttribute('NIM')
                                                 ->format();
-                                        } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                                        } elseif ($fieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { 
                                             $filamentComponent = IpkInput::make($fieldName)
                                                 ->validationAttribute('IPK')
                                                 ->format();
                                         } elseif ($fieldConfig['name'] === 'thn_akademik') {
                                             $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
-                                            // $filamentComponent = TextInput::make($fieldName)
-                                            //     ->mask('9999/9999')
-                                            //     ->format()
-                                                // ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                                //     // Pastikan state tidak kosong dan mengandung '/'
-                                                //     if ($state && Str::contains($state, '/')) {
-                                                //         $parts = explode('/', $state);
-                                                //         $firstYear = (int) $parts[0];
-                                                //         // Jika angka pertama valid dan kita sudah punya slash
-                                                //         if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
-                                                //             $nextYear = $firstYear + 1;
-                                                //             // Set kembali nilai field dengan tahun kedua yang otomatis
-                                                //             $set($get('statePath'), $firstYear . '/' . $nextYear);
-                                                //         }
-                                                //     }
-                                                // })
-                                                // ->live(onBlur: true)
-                                                // ;
                                         } elseif ($fieldConfig['name'] === 'nip') {
                                             $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
                                         } elseif ($fieldConfig['name'] === 'nomor_surat') {
@@ -255,13 +270,13 @@ class PengajuanResource extends Resource
                                             $filamentComponent = Repeater::make($fieldName)
                                                 ->label($fieldConfig['label'])
                                                 ->schema($subFieldsSchema)
-                                                ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') // Label untuk tombol tambah repeater
-                                                ->reorderableWithButtons() // Agar bisa diurutkan ulang
-                                                ->columns(2) // Jumlah kolom dalam repeaters
-                                                ->columnSpan('full') // Agar repeater memenuhi lebar
-                                                ->maxItems($fieldConfig['max_items'] ?? null) // Batasan jumlah item
+                                                ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') 
+                                                ->reorderableWithButtons() 
+                                                ->columns(2) 
+                                                ->columnSpan('full') 
+                                                ->maxItems($fieldConfig['max_items'] ?? null) 
                                                 ->required($fieldConfig['required'] ?? false)
-                                                ->default($fieldConfig['default'] ?? []); // Default untuk repeater adalah array kosong
+                                                ->default($fieldConfig['default'] ?? []); 
                                         } else {
                                             switch ($fieldConfig['type']) {
                                                 case 'textarea':
