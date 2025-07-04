@@ -12,7 +12,7 @@ return [
   */
 
     'kadep' => [
-        'name' => 'Nur Rohman Rosyid, S.T., M.T., D.Eng.',
+        'name' => 'Ir. Nur Rohman Rosyid, S.T., M.T., D.Eng., IPM',
         'nika' => '111197510201206101',
     ],
 
