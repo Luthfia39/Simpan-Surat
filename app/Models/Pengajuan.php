@@ -16,7 +16,7 @@ class Pengajuan extends Model
         'status',
         'template_id',
         'data_surat',
-        'keterangan',
+        'keterangan_final',
         'surat_keluar_id'
     ];
 
