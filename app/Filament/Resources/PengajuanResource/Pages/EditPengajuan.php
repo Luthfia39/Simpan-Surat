@@ -20,6 +20,79 @@ class EditPengajuan extends EditRecord
 
     protected ?string $subheading = "Cek pengajuan mahasiswa dan ubah statusnya";
 
+    /**
+     * Mutate the form data before saving the record.
+     * This is where you can handle custom logic for specific fields.
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Ambil instance record Pengajuan yang sedang diedit
+        $record = $this->getRecord();
+
+        // Ambil data FileUpload (jika ada inputnya)
+        // Nama fieldnya adalah 'suratKeluar.pdf_url'
+        $uploadedFilePath = $data['suratKeluar']['pdf_url'] ?? null; 
+        
+        // Ambil status dari form
+        $newStatus = $data['status']; 
+
+        // === KUNCI LOGIKA is_show dan penghapusan file ===
+        if ($record->suratKeluar) { // Pastikan ada record SuratKeluar terkait
+            $suratKeluarModel = $record->suratKeluar;
+
+            if ($newStatus === 'selesai') {
+                // Skenario 1: Status menjadi 'selesai'
+                if (!empty($uploadedFilePath)) {
+                    // Jika ada file diupload: update pdf_url dan is_show = true
+                    // Hapus file lama (draft atau yang sudah signed sebelumnya) jika ada
+                    if ($suratKeluarModel->pdf_url) {
+                        Storage::disk('public')->delete('surat_keluar/' . $suratKeluarModel->pdf_url);
+                    }
+                    // Rename file yang diupload agar ada suffix _signed
+                    $originalFileName = pathinfo($uploadedFilePath, PATHINFO_FILENAME);
+                    $fileExtension = pathinfo($uploadedFilePath, PATHINFO_EXTENSION);
+                    $newSignedFileName = $originalFileName . '_signed.' . $fileExtension;
+                    Storage::disk('public')->move($uploadedFilePath, 'surat_keluar/' . $newSignedFileName);
+
+                    $suratKeluarModel->pdf_url = $newSignedFileName; // Simpan path signed
+                    $suratKeluarModel->is_show = true; // Bisa didownload
+                } else {
+                    // Jika status 'selesai' TAPI TIDAK ADA file diupload (kasus offline)
+                    // Hapus file lama (draft atau yang sudah signed)
+                    // if ($suratKeluarModel->pdf_url) {
+                    //     Storage::disk('public')->delete('surat_keluar/' . $suratKeluarModel->pdf_url);
+                    // }
+                    // $suratKeluarModel->pdf_url = null; // Tidak ada file online
+                    $suratKeluarModel->is_show = false; // Tidak bisa didownload
+                }
+            } else {
+                // Skenario 2: Status BUKAN 'selesai' (misal 'pending', 'diproses', 'menunggu_ttd', 'ditolak')
+                // Logika is_show dan pdf_url tidak berubah di sini.
+                // Mereka diatur oleh generateSuratKeluar (pdf_url = draft, is_show = false)
+                // atau reset jika status diubah dari 'selesai' ke lain.
+                // Jika status diubah kembali dari 'selesai' dan ada file, file tetap ada
+                // tapi is_show mungkin jadi false.
+                // Kalau ada file di-upload tapi status belum 'selesai', bisa jadi perlu ditangani juga.
+                // Untuk kesederhanaan, biarkan is_show dan pdf_url tidak diubah jika status bukan 'selesai'.
+                // Jika user mengupload file tapi status belum diset 'selesai', file tersebut mungkin tersimpan tapi is_show tetap false.
+            }
+
+            $suratKeluarModel->save(); // Simpan perubahan pada model SuratKeluar
+
+        } else {
+            \Log::warning('mutateFormDataBeforeSave: SuratKeluar record not found for Pengajuan ID:', ['pengajuan_id' => $record->id]);
+        }
+        // === AKHIR LOGIKA is_show dan penghapusan file ===
+
+        // Hapus kunci 'suratKeluar' dari $data karena sudah ditangani secara manual
+        // Agar Filament tidak mencoba menyimpannya lagi dan menyebabkan error
+        if (isset($data['suratKeluar'])) {
+            unset($data['suratKeluar']);
+        }
+
+        return $data; // Kembalikan data yang sudah dimutasi
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -130,7 +203,7 @@ class EditPengajuan extends EditRecord
                         // Mengirim notifikasi sukses kepada admin.
                         Notification::make()
                             ->title('Draf Surat Keluar Berhasil Dibuat') // Ubah judul notifikasi
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. Status pengajuan diubah menjadi "Menunggu Tanda Tangan". <a href="' . asset('storage/surat_keluar/' . $pdfFilePathInStorage) . '" target="_blank" class="underline">Lihat Draf PDF</a>') // Tambah info status dan link draf
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. Status pengajuan diubah menjadi "Menunggu Tanda Tangan". <a href="' . asset('storage/' . $pdfFilePathInStorage) . '" target="_blank" class="underline">Lihat Draf PDF</a>') // Tambah info status dan link draf
                             ->success()
                             ->send();
 
