@@ -256,12 +256,13 @@ class EditTemplate extends EditRecord
                             'pdf_url' => $pdfFileName, 
                             'template_id' => $templateRecord->_id,
                             'pengajuan_id' => null, 
-                            'metadata' => $dataSuratFromForm 
+                            'metadata' => $dataSuratFromForm,
+                            'is_signed' => false 
                         ]);
 
                         Notification::make()
                             ->title('Surat Keluar Berhasil Dibuat')
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="http://127.0.0.1:8000/storage/surat_keluar/'.$pdfFileName. '" target="_blank" class="underline">Lihat PDF</a>')
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . asset('storage/' . $pdfFileName) . '" target="_blank" class="underline">Lihat Draf PDF</a>')
                             ->success()
                             ->send();
 
