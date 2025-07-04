@@ -10,6 +10,8 @@ use MongoDB\Laravel\Eloquent\Model as Eloquent;
 
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use App\Models\Prodi;
+use App\Models\Pengajuan;
 
 class User extends Eloquent implements AuthenticatableContract, FilamentUser
 {
