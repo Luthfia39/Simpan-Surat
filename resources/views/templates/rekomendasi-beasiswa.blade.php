@@ -12,14 +12,15 @@
       <x-info-item label="NIM">
         {{ $nim }}
       </x-info-item>
+      <x-info-item label="Prodi">
+        {{-- dibuat panjang  --}}
+        {{ Major::getNameByCode($prodi) }} 
+      </x-info-item>
       <x-info-item label="IPK">
         {{ $ipk }}
       </x-info-item>
       <x-info-item label="SKS">
         {{ $sks }}
-      </x-info-item>
-      <x-info-item label="Alamat">
-        {{ $alamat }}
       </x-info-item>
     </x-info-list>
     <p class="justify">Untuk diusulkan sebagai calon penerima Beasiswa {{ $beasiswa }}.</p>

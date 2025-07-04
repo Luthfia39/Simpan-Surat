@@ -1,7 +1,7 @@
 <x-surat>
   <div class="body-header">
     <h1 class="title">SURAT KETERANGAN AKTIF KULIAH</h1>
-    <x-number-layout />
+    <span class="nomor-surat">NO. {{ $nomor_surat ?? '1' }}/UN1/SV.2-TEDI/KM/{{ date("Y") }}</span>
   </div>
   <div class="body-main">
     <p>Yang bertanda tangan dibawah ini:</p>
