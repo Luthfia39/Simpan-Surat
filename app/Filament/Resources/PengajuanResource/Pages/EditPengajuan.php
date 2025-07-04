@@ -103,7 +103,7 @@ class EditPengajuan extends EditRecord
                         if (!$userData || !$templateData) {
                             Notification::make()
                                 ->title('Error')
-                                ->body('Pengajuan tidak memiliki pengguna atau template yang valid.')
+                                ->body('Pengajuan tidak memiliki pengguna atau jenis surat yang valid.')
                                 ->danger()
                                 ->send();
                             return;
