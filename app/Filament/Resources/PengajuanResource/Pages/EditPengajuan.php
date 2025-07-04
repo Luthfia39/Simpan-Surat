@@ -20,18 +20,16 @@ class EditPengajuan extends EditRecord
 
     protected ?string $subheading = "Cek pengajuan mahasiswa dan ubah statusnya";
 
-    /**
-     * Mutate the form data before saving the record.
-     * This is where you can handle custom logic for specific fields.
-     */
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function mutateFormDataBeforeSave(array $data): array // Untuk halaman, biasanya pakai mutateFormDataBeforeSave
     {
-        // Ambil instance record Pengajuan yang sedang diedit
-        $record = $this->getRecord();
-
+        $record = $this->getRecord();;
         // Ambil data FileUpload (jika ada inputnya)
         // Nama fieldnya adalah 'suratKeluar.pdf_url'
-        $uploadedFilePath = $data['suratKeluar']['pdf_url'] ?? null; 
+        $uploadedFilePath = $data['pdf_url'] ; 
+
+        // dd($uploadedFilePath);
+
+        $keterangan = $data['keterangan_final'];
         
         // Ambil status dari form
         $newStatus = $data['status']; 
@@ -63,34 +61,23 @@ class EditPengajuan extends EditRecord
                     //     Storage::disk('public')->delete('surat_keluar/' . $suratKeluarModel->pdf_url);
                     // }
                     // $suratKeluarModel->pdf_url = null; // Tidak ada file online
+                    $suratKeluarModel->pengajuan->keterangan = $keterangan;
+                    $suratKeluarModel->pengajuan->save();
                     $suratKeluarModel->is_show = false; // Tidak bisa didownload
                 }
-            } else {
-                // Skenario 2: Status BUKAN 'selesai' (misal 'pending', 'diproses', 'menunggu_ttd', 'ditolak')
-                // Logika is_show dan pdf_url tidak berubah di sini.
-                // Mereka diatur oleh generateSuratKeluar (pdf_url = draft, is_show = false)
-                // atau reset jika status diubah dari 'selesai' ke lain.
-                // Jika status diubah kembali dari 'selesai' dan ada file, file tetap ada
-                // tapi is_show mungkin jadi false.
-                // Kalau ada file di-upload tapi status belum 'selesai', bisa jadi perlu ditangani juga.
-                // Untuk kesederhanaan, biarkan is_show dan pdf_url tidak diubah jika status bukan 'selesai'.
-                // Jika user mengupload file tapi status belum diset 'selesai', file tersebut mungkin tersimpan tapi is_show tetap false.
-            }
+            } else {}
 
             $suratKeluarModel->save(); // Simpan perubahan pada model SuratKeluar
 
         } else {
             \Log::warning('mutateFormDataBeforeSave: SuratKeluar record not found for Pengajuan ID:', ['pengajuan_id' => $record->id]);
         }
-        // === AKHIR LOGIKA is_show dan penghapusan file ===
-
-        // Hapus kunci 'suratKeluar' dari $data karena sudah ditangani secara manual
-        // Agar Filament tidak mencoba menyimpannya lagi dan menyebabkan error
+        
         if (isset($data['suratKeluar'])) {
             unset($data['suratKeluar']);
         }
 
-        return $data; // Kembalikan data yang sudah dimutasi
+        return $data; 
     }
 
     protected function getHeaderActions(): array

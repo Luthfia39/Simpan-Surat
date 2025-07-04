@@ -381,7 +381,7 @@ class PengajuanResource extends Resource
                                         ])
                                         ->required()
                                         ->default('pending'),
-                                    Forms\Components\Textarea::make('keterangan')
+                                    Forms\Components\Textarea::make('keterangan_final')
                                         ->label('Keterangan')
                                         ->columnSpanFull(),
                                 ])
@@ -404,7 +404,7 @@ class PengajuanResource extends Resource
                                         ->hiddenOn('create'),
 
                                     // FileUpload untuk mengupload surat yang sudah ditandatangani
-                                    FileUpload::make('suratKeluar.pdf_url') // Langsung binding ke relasi suratKeluar dan kolom pdf_url
+                                    FileUpload::make('pdf_url') // Langsung binding ke relasi suratKeluar dan kolom pdf_url
                                         ->label('Upload Surat Keluar Final (Sudah Ditandatangani)')
                                         ->helperText('Unggah versi final surat yang sudah ditandatangani basah disini.')
                                         ->directory('surat_keluar') // Direktori baru untuk PDF final
@@ -415,15 +415,19 @@ class PengajuanResource extends Resource
                                         ->downloadable()
                                         ->openable()
                                         // Visible hanya jika statusnya 'diproses' atau 'menunggu_ttd' dan ada surat yang digenerate
-                                        ->visible(function (Get $get, ?\App\Models\Pengajuan $record): bool {
+                                        ->visible(function (Get $get, ?\App\Models\Pengajuan $record, string $operation): bool { // <-- Tambahkan 'string $operation' di sini
                                             $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists;
                                             $status = $get('status');
-                                            return auth()->user()->is_admin && in_array($status, ['menunggu_ttd']) && $suratKeluarExists;
+                            
+                                            return auth()->user()->is_admin
+                                                && in_array($status, ['menunggu_ttd', 'selesai'])
+                                                && $suratKeluarExists
+                                                && $operation === 'edit'; 
                                         }),
 
                                     // Aksi download PDF yang sudah diupload/generate
                                     Forms\Components\Actions::make([
-                                        Forms\Components\Actions\Action::make('downloadFinalPdf') // Ubah nama aksi
+                                        Forms\Components\Actions\Action::make('downloadFinalPdf') 
                                             ->label('Download PDF Surat Final')
                                             ->icon('heroicon-o-arrow-down-tray')
                                             ->color('primary')
@@ -436,7 +440,7 @@ class PengajuanResource extends Resource
                                             ->openUrlInNewTab()
                                             ->visible(function (?\App\Models\Pengajuan $record, string $operation): bool {
                                                 // Tampilkan tombol download jika ada URL PDF di suratKeluar
-                                                return $record && $record->suratKeluar->is_show && $operation === 'view' && $record->status === 'selesai';
+                                                return $record && $record->suratKeluar && $record->suratKeluar->is_show && $operation === 'view' && $record->status === 'selesai';
                                             }),
                                     ])
                                     ->columnSpanFull(), 
