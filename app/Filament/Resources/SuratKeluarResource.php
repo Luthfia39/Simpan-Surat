@@ -181,6 +181,7 @@ class SuratKeluarResource extends Resource
                             $uploadedFilePath = $data['final_signed_letter'] ?? null; 
 
                             if ($isOfflinePickup) {
+                                $record->pengajuan->keterangan = $data['keterangan_final'];
                                 $record->is_show = false;
                             } else { 
                                 Storage::disk('public')->delete('surat_keluar/' . $record->pdf_url);
