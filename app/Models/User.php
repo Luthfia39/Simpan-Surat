@@ -36,7 +36,7 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
         'email_verified_at',
         'is_admin',
         'nim',
-        'prodi_id',
+        'prodi',
     ];
 
     /**
@@ -83,10 +83,10 @@ class User extends Eloquent implements AuthenticatableContract, FilamentUser
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function prodi(): BelongsTo
-    {
-        return $this->belongsTo(Prodi::class, 'prodi_id');
-    }
+    // public function prodi(): BelongsTo
+    // {
+    //     return $this->belongsTo(Prodi::class, 'prodi');
+    // }
 
     /**
      * Get all of the pengajuans for the User
