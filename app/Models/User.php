@@ -4,6 +4,8 @@ namespace App\Models;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Auth\Authenticatable;
 use MongoDB\Laravel\Eloquent\Model as Eloquent;
+use MongoDB\Laravel\Relations\BelongsTo; 
+use MongoDB\Laravel\Relations\HasMany;
 
 // use Jenssegers\Mongodb\Auth\User as Authenticatable;
 // class User extends Authenticatable implements FilamentUser
