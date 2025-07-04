@@ -257,7 +257,7 @@ class EditTemplate extends EditRecord
                             'template_id' => $templateRecord->_id,
                             'pengajuan_id' => null, 
                             'metadata' => $dataSuratFromForm,
-                            'is_signed' => false 
+                            'is_show' => false 
                         ]);
 
                         Notification::make()

@@ -108,7 +108,8 @@ class EditPengajuan extends EditRecord
                             'prodi' => $prodiUser,
                             'pdf_url' => $pdfFileName, // Simpan nama file PDF draf yang baru
                             'template_id' => $templateData->_id,
-                            'metadata' => $dataSurat
+                            'metadata' => $dataSurat, 
+                            'is_show' => false
                         ]);
 
                         $suratKeluar->save(); // Menyimpan atau memperbarui record SuratKeluar.
@@ -129,7 +130,7 @@ class EditPengajuan extends EditRecord
                         // Mengirim notifikasi sukses kepada admin.
                         Notification::make()
                             ->title('Draf Surat Keluar Berhasil Dibuat') // Ubah judul notifikasi
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. Status pengajuan diubah menjadi "Menunggu Tanda Tangan". <a href="' . asset('storage/' . $pdfFilePathInStorage) . '" target="_blank" class="underline">Lihat Draf PDF</a>') // Tambah info status dan link draf
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. Status pengajuan diubah menjadi "Menunggu Tanda Tangan". <a href="' . asset('storage/surat_keluar/' . $pdfFilePathInStorage) . '" target="_blank" class="underline">Lihat Draf PDF</a>') // Tambah info status dan link draf
                             ->success()
                             ->send();
 
