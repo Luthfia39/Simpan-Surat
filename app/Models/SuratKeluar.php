@@ -23,7 +23,8 @@ class SuratKeluar extends Model
         'pdf_url',
         'template_id',
         'pengajuan_id',
-        'metadata'
+        'metadata',
+        'is_signed'
     ];
 
     protected $casts = [
