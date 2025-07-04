@@ -23,6 +23,10 @@
                     <span class="w-3 h-3 rounded-full mr-1" style="background-color: #f57c00;"></span>
                     Tanggal
                 </span>
+                <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full mr-1" style="background-color: #a578f5;"></span>
+                    Penerima/Pengirim
+                </span>
             </div>
             <p class="text-sm mt-2">
                 Langkah - langkah anotasi teks dapat dilihat pada
