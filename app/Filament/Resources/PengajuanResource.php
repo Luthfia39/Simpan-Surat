@@ -107,7 +107,7 @@ class PengajuanResource extends Resource
                                     ->disabled(),
 
                                     Select::make('template_id')
-                                    ->label('Pilih Template Surat')
+                                    ->label('Pilih Jenis Surat')
                                     ->relationship(
                                         name: 'template', 
                                         titleAttribute: 'name', 
@@ -125,13 +125,13 @@ class PengajuanResource extends Resource
                             ])->columns(2),
 
                         Forms\Components\Section::make('Input Data Surat')
-                            ->description('Isi data spesifik untuk template yang dipilih.')
+                            ->description('Isi data spesifik untuk jenis surat yang dipilih.')
                             ->schema(function (Get $get, ?\App\Models\Pengajuan $record): array {
                                 $templateId = $get('template_id');
                                 if (!$templateId) {
                                     return [
                                         Forms\Components\Placeholder::make('no_template_selected_data')
-                                            ->content('Pilih template terlebih dahulu untuk mengisi data surat.'),
+                                            ->content('Pilih jenis surat terlebih dahulu untuk mengisi data surat.'),
                                     ];
                                 }
 
@@ -143,7 +143,6 @@ class PengajuanResource extends Resource
 
                                         $filamentComponent = null;
 
-                                        // --- PENANGANAN TIPE INPUT KHUSUS / CUSTOM COMPONENT ---
                                         if ($fieldConfig['name'] === 'nim' && class_exists(NimInput::class)) { // Cek NimInput ada
                                             $filamentComponent = NimInput::make($fieldName)
                                                 ->validationAttribute('NIM')
@@ -153,26 +152,30 @@ class PengajuanResource extends Resource
                                                 ->validationAttribute('IPK')
                                                 ->format();
                                         } elseif ($fieldConfig['name'] === 'thn_akademik') {
-                                            // $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
-                                            $filamentComponent = TextInput::make($fieldName)
-                                                ->mask('9999/9999')
-                                                ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                                    // Pastikan state tidak kosong dan mengandung '/'
-                                                    if ($state && Str::contains($state, '/')) {
-                                                        $parts = explode('/', $state);
-                                                        $firstYear = (int) $parts[0];
-                                                        // Jika angka pertama valid dan kita sudah punya slash
-                                                        if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
-                                                            $nextYear = $firstYear + 1;
-                                                            // Set kembali nilai field dengan tahun kedua yang otomatis
-                                                            $set($get('statePath'), $firstYear . '/' . $nextYear);
-                                                        }
-                                                    }
-                                                })
-                                                ->live(onBlur: true);
+                                            $filamentComponent = TextInput::make($fieldName)->mask('9999/9999');
+                                            // $filamentComponent = TextInput::make($fieldName)
+                                            //     ->mask('9999/9999')
+                                            //     ->format()
+                                                // ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                                                //     // Pastikan state tidak kosong dan mengandung '/'
+                                                //     if ($state && Str::contains($state, '/')) {
+                                                //         $parts = explode('/', $state);
+                                                //         $firstYear = (int) $parts[0];
+                                                //         // Jika angka pertama valid dan kita sudah punya slash
+                                                //         if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
+                                                //             $nextYear = $firstYear + 1;
+                                                //             // Set kembali nilai field dengan tahun kedua yang otomatis
+                                                //             $set($get('statePath'), $firstYear . '/' . $nextYear);
+                                                //         }
+                                                //     }
+                                                // })
+                                                // ->live(onBlur: true)
+                                                // ;
                                         } elseif ($fieldConfig['name'] === 'nip') {
                                             $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
-                                        }
+                                        } elseif ($fieldConfig['name'] === 'nomor_surat') {
+                                            $filamentComponent = TextInput::make($fieldName)->numeric()->minValue(1);
+                                        } 
                                         
                                         elseif ($fieldConfig['type'] === 'repeater') {
                                             // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
@@ -308,7 +311,7 @@ class PengajuanResource extends Resource
                                 if (empty($fields)) {
                                     return [
                                         Forms\Components\Placeholder::make('no_data_fields_required')
-                                            ->content('Template ini tidak memerlukan input data spesifik.'),
+                                            ->content('Jenis surat ini tidak memerlukan input data spesifik.'),
                                     ];
                                 }
                                 return $fields;
@@ -320,7 +323,7 @@ class PengajuanResource extends Resource
                                 if (!$templateId) {
                                     return [
                                         Forms\Components\Placeholder::make('no_template_selected_files')
-                                            ->content('Pilih template terlebih dahulu untuk melihat form upload file.'),
+                                            ->content('Pilih jenis surat terlebih dahulu untuk melihat form upload file.'),
                                     ];
                                 }
 
@@ -335,14 +338,15 @@ class PengajuanResource extends Resource
                                             ->visibility('public')
                                             ->preserveFilenames()
                                             ->downloadable()
-                                            ->openable();
+                                            ->openable()
+                                            ->required($fileConfig['required'] ?? false);
                                     }
                                 }
 
                                 if (empty($fields)) {
                                     return [
                                         Forms\Components\Placeholder::make('no_files_required')
-                                            ->content('Template ini tidak memerlukan berkas yang diupload.'),
+                                            ->content('Jenis surat ini tidak memerlukan berkas yang diupload.'),
                                     ];
                                 }
                                 return $fields;
@@ -364,18 +368,20 @@ class PengajuanResource extends Resource
                                         ->default('pending'),
                                     Forms\Components\Textarea::make('keterangan')
                                         ->label('Keterangan')
-                                        ->maxLength(65535)
                                         ->columnSpanFull(),
                                 ])
                                 ->columns(2)
                                 ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'),
-                            Forms\Components\Section::make('Berkas Surat Keluar Final') // Ubah judul section
+                            Forms\Components\Section::make('Berkas Surat Keluar Final')
                                 ->schema([
                                     Forms\Components\Placeholder::make('surat_keluar_status')
                                         ->label('')
                                         ->content(function (?\App\Models\Pengajuan $record) {
-                                            if ($record && ($record->suratKeluar || ($record->suratKeluar && !empty($record->suratKeluar)))) {
-                                                return 'Sudah ada surat keluar.';
+                                            if ($record && ($record->suratKeluar || ($record->suratKeluar && !empty($record->suratKeluar))) && $record->status === 'menunggu_ttd') {
+                                                return 'Mohon ditunggu, surat sedang proses penandatanganan.';
+                                            }
+                                            if ($record && ($record->suratKeluar || ($record->suratKeluar && !empty($record->suratKeluar))) && $record->status === 'selesai') {
+                                                return 'Surat telah tersedia.';
                                             }
                                             return 'Belum ada surat keluar.';
                                         })
@@ -385,19 +391,19 @@ class PengajuanResource extends Resource
                                     // FileUpload untuk mengupload surat yang sudah ditandatangani
                                     FileUpload::make('suratKeluar.pdf_url') // Langsung binding ke relasi suratKeluar dan kolom pdf_url
                                         ->label('Upload Surat Keluar Final (Sudah Ditandatangani)')
-                                        ->hint('Unggah versi final surat yang sudah ditandatangani basah. Ini akan menimpa surat yang digenerate.')
-                                        ->directory('surat_keluar_final') // Direktori baru untuk PDF final
+                                        ->helperText('Unggah versi final surat yang sudah ditandatangani basah disini.')
+                                        ->directory('surat_keluar') // Direktori baru untuk PDF final
                                         ->visibility('public')
-                                        ->acceptedFileTypes(['application/pdf']) // Hanya PDF
-                                        ->maxSize(5120) // Maksimal 5MB (sesuaikan)
-                                        ->preserveFilenames() // Pertahankan nama file asli
+                                        ->acceptedFileTypes(['application/pdf']) 
+                                        ->maxSize(5120) 
+                                        ->preserveFilenames() 
                                         ->downloadable()
                                         ->openable()
                                         // Visible hanya jika statusnya 'diproses' atau 'menunggu_ttd' dan ada surat yang digenerate
                                         ->visible(function (Get $get, ?\App\Models\Pengajuan $record): bool {
                                             $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists;
                                             $status = $get('status');
-                                            return auth()->user()->is_admin && in_array($status, ['diproses', 'menunggu_ttd']) && $suratKeluarExists;
+                                            return auth()->user()->is_admin && in_array($status, ['menunggu_ttd']) && $suratKeluarExists;
                                         }),
 
                                     // Aksi download PDF yang sudah diupload/generate
@@ -408,64 +414,17 @@ class PengajuanResource extends Resource
                                             ->color('primary')
                                             ->url(function (?\App\Models\Pengajuan $record): string {
                                                 if ($record && $record->suratKeluar && $record->suratKeluar->pdf_url) {
-                                                    // Asumsi pdf_url di SuratKeluar sudah menyimpan path relatif dari 'public' disk
-                                                    return Storage::disk('public')->url('surat_keluar_final/' . $record->suratKeluar->pdf_url);
+                                                    return asset('/storage/surat_keluar/' . $record->suratKeluar->pdf_url);
                                                 }
                                                 return '#';
                                             })
                                             ->openUrlInNewTab()
-                                            ->visible(function (?\App\Models\Pengajuan $record) {
+                                            ->visible(function (?\App\Models\Pengajuan $record, string $operation): bool {
                                                 // Tampilkan tombol download jika ada URL PDF di suratKeluar
-                                                return $record && $record->suratKeluar && !empty($record->suratKeluar->pdf_url);
-                                            }),
-
-                                        // Aksi tambahan untuk mengubah status menjadi 'selesai' secara manual
-                                        Forms\Components\Actions\Action::make('markAsSelesai')
-                                            ->label('Tandai Selesai & Kirim Pemberitahuan')
-                                            ->icon('heroicon-o-check-circle')
-                                            ->color('success')
-                                            ->requiresConfirmation()
-                                            ->modalHeading('Tandai Pengajuan Selesai?')
-                                            ->modalDescription('Ini akan menandai pengajuan sebagai "Selesai" dan mengirim notifikasi ke pengaju. Pastikan surat final sudah diunggah.')
-                                            ->modalSubmitActionLabel('Konfirmasi Selesai')
-                                            ->action(function (?\App\Models\Pengajuan $record) {
-                                                if ($record) {
-                                                    // Pastikan ada surat keluar yang terupload sebelum di-set selesai
-                                                    if (!$record->suratKeluar || empty($record->suratKeluar->pdf_url)) {
-                                                        Notification::make()
-                                                            ->title('Gagal')
-                                                            ->body('Tidak dapat menandai selesai. Harap unggah surat final terlebih dahulu.')
-                                                            ->danger()
-                                                            ->send();
-                                                        return;
-                                                    }
-
-                                                    $record->status = 'selesai';
-                                                    $record->save();
-
-                                                    // Kirim notifikasi ke pengaju
-                                                    Notification::make()
-                                                        ->title('Pengajuan Anda Telah Selesai!')
-                                                        ->body('Surat Anda telah selesai diproses dan dapat diunduh. ' . 
-                                                            ($record->suratKeluar->pdf_url ? 'Unduh surat di sini: <a href="' . Storage::disk('public')->url('surat_keluar_final/' . $record->suratKeluar->pdf_url) . '" target="_blank" class="underline">Unduh Surat</a>' : '')
-                                                        )
-                                                        ->success()
-                                                        ->sendTo($record->user);
-
-                                                    Notification::make()
-                                                        ->title('Pengajuan Berhasil Ditandai Selesai')
-                                                        ->success()
-                                                        ->send();
-                                                }
-                                            })
-                                            // Visible jika admin dan statusnya bukan 'selesai' dan ada surat yang digenerate/diupload
-                                            ->visible(function (Get $get, ?\App\Models\Pengajuan $record): bool {
-                                                $status = $get('status');
-                                                $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists && !empty($record->suratKeluar->pdf_url);
-                                                return auth()->user()->is_admin && $status !== 'selesai' && $suratKeluarExists;
+                                                return $record && $record->suratKeluar->is_show && $operation === 'view' && $record->status === 'selesai';
                                             }),
                                     ])
-                                    ->columnSpanFull(), // Pastikan aksi mengisi seluruh kolom
+                                    ->columnSpanFull(), 
                                 ])
                                 ->columns(1) // Atur kolom untuk section Berkas Surat Keluar Final menjadi 1
                                 ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'), // Tampilkan section ini hanya untuk admin atau saat view
@@ -562,97 +521,6 @@ class PengajuanResource extends Resource
                         auth()->user()->is_admin &&
                         ($record->status !== 'selesai' && $record->status !== 'ditolak')
                     ),
-                // Tables\Actions\Action::make('createSuratKeluar')
-                //     ->label('Buat Surat Keluar')
-                //     ->icon('heroicon-o-arrow-top-right-on-square')
-                //     ->color('success')
-                //     ->requiresConfirmation()
-                //     ->modalHeading('Buat Surat Keluar?')
-                //     ->modalDescription('Ini akan membuat dokumen surat keluar dan memperbarui status pengajuan.')
-                //     ->modalSubmitActionLabel('Konfirmasi Buat Surat')
-                //     ->action(function (Pengajuan $record) {
-                //         try {
-                //             $userData = $record->user;
-                //             $templateData = $record->template;
-                //             $dataSurat = $record->data_surat; 
-    
-                //             if (!$userData || !$templateData) {
-                //                 Notification::make()
-                //                     ->title('Error')
-                //                     ->body('Pengajuan tidak memiliki pengguna atau template yang valid.')
-                //                     ->danger()
-                //                     ->send();
-                //                 return;
-                //             }
-    
-                //             $nomorSurat = 'NO.'. $dataSurat['nomor_surat']  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y") ;
-                //             $prodiUser = $userData->major['kode'] ?? 'N/A'; 
-    
-                //             $pdfPath = null;
-                //             try {
-                //                 $viewData = [
-                //                     'pengajuan' => $record,
-                //                     'user' => $userData,
-                //                     'template' => $templateData,
-                //                     'linkFiles' => $dataSurat['link_files'] ?? [] 
-                //                 ];
-    
-                //                 foreach ($dataSurat as $key => $value) {
-                //                     if (!in_array($key, ['link_files'])) {
-                //                         $viewData[$key] = $value;
-                //                     }
-                //                 }
-                //                 $viewData['prodi'] = $dataSurat['prodi'] ?? $prodiUser;
-    
-    
-                //                 $pdfContent = view('templates.' . $templateData->class_name, $viewData)->render();
-    
-                //                 $pdfFileName = 'surat_keluar_' . Str::slug($templateData->name) . '_' . Str::slug($dataSurat['nama'] ?? 'unknown') . '_' . time() . '.pdf';
-                //                 Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
-    
-                //             } catch (\Exception $e) {
-                //                  Notification::make()
-                //                     ->title('Gagal Membuat PDF')
-                //                     ->body('Terjadi kesalahan saat merender PDF: ' . $e->getMessage())
-                //                     ->danger()
-                //                     ->send();
-                //                 return;
-                //             }
-
-                //             $suratKeluar = \App\Models\SuratKeluar::create([
-                //                 'nomor_surat' => $nomorSurat,
-                //                 'prodi' => $prodiUser, 
-                //                 'pdf_url' => $pdfFileName,
-                //                 'template_id' => $templateData->_id,
-                //                 'pengajuan_id' => $record->_id,
-                //                 'metadata' => $dataSurat 
-                //             ]);
-    
-                //             $updateData = [
-                //                 'surat_keluar_id' => $suratKeluar->_id,
-                //             ];
-                //             if ($record->status !== 'selesai') {
-                //                 $updateData['status'] = 'selesai';
-                //             }
-                //             $record->update($updateData);
-    
-                //             Notification::make()
-                //                 ->title('Surat Keluar Berhasil Dibuat')
-                //                 ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . $pdfUrl . '" target="_blank" class="underline">Lihat PDF</a>')
-                //                 ->success()
-                //                 ->send();
-    
-                //             return redirect()->route('filament.admin.resources.pengajuans.edit', ['record' => $record->getKey()]);
-    
-                //         } catch (\Exception $e) {
-                //             Notification::make()
-                //                 ->title('Gagal Membuat Surat Keluar')
-                //                 ->body('Terjadi kesalahan: ' . $e->getMessage())
-                //                 ->danger()
-                //                 ->send();
-                //         }
-                //     })
-                //     ->visible(fn (\App\Models\Pengajuan $record): bool => $record->status !== 'selesai' && !$record->surat_keluar_id && Auth::user()->is_admin),
             ])
             ->bulkActions([ ]);
     }
