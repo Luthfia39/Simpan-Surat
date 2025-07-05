@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Repeater;
+use Illuminate\Validation\ValidationException;
 
 class EditTemplate extends EditRecord
 {
@@ -91,7 +92,6 @@ class EditTemplate extends EditRecord
                                             $subFilamentComponent = DatePicker::make($subFieldName);
                                             break;
                                         case 'select':
-                                            // Handle select options for sub-field if needed
                                             $subOptions = collect($subFieldConfig['options'] ?? [])->mapWithKeys(function ($option) {
                                                 return [$option['value'] => $option['label']];
                                             })->toArray();
@@ -103,12 +103,12 @@ class EditTemplate extends EditRecord
                                             break;
                                     }
 
-                                    if ($subFieldConfig['name'] === 'nim') { // Cek NimInput ada
+                                    if ($subFieldConfig['name'] === 'nim') { 
                                         $subFilamentComponent = TextInput::make($subFieldName)
                                             ->placeholder('00/000000/SV/00000')
                                             ->mask('99/999999/aa/99999')
                                             ->regex('/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/');
-                                    } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                                    } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { 
                                         $subFilamentComponent = IpkInput::make($subFieldName)
                                             ->validationAttribute('IPK')
                                             ->format();
@@ -134,17 +134,15 @@ class EditTemplate extends EditRecord
                                 $filamentComponent = Repeater::make($fieldName)
                                     ->label($fieldConfig['label'])
                                     ->schema($subFieldsSchema)
-                                    ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') // Label untuk tombol tambah repeater
-                                    ->reorderableWithButtons() // Agar bisa diurutkan ulang
-                                    ->columns(2) // Jumlah kolom dalam repeaters
-                                    ->columnSpan('full') // Agar repeater memenuhi lebar
-                                    ->maxItems($fieldConfig['max_items'] ?? null) // Batasan jumlah item
+                                    ->addActionLabel($fieldConfig['add_action_label'] ?? 'Tambah Item') 
+                                    ->reorderableWithButtons() 
+                                    ->columns(2) 
+                                    ->columnSpan('full') 
+                                    ->maxItems($fieldConfig['max_items'] ?? null) 
                                     ->required($fieldConfig['required'] ?? false)
-                                    ->default($fieldConfig['default'] ?? []); // Default untuk repeater adalah array kosong
+                                    ->default($fieldConfig['default'] ?? []); 
                             }
-                            // --- AKHIR PENANGANAN TIPE REPEATER ---
                             else {
-                                // === PENANGANAN TIPE INPUT BAWAAN FILAMENT ===
                                 switch ($fieldConfig['type']) {
                                     case 'textarea':
                                         $filamentComponent = Textarea::make($fieldName);
@@ -173,17 +171,15 @@ class EditTemplate extends EditRecord
                                     ->label($fieldConfig['label'])
                                     ->default($fieldConfig['default'] ?? null)
                                     ->helperText(new HtmlString($fieldConfig['helper_text'] ?? null))
-                                    ->required($fieldConfig['required'] ?? false); // Ambil `required` dari template
+                                    ->required($fieldConfig['required'] ?? false); 
 
                                 $fields[] = $filamentComponent;
                             }
                         }
                         return $fields;
                     })
-                    ->columns(2), // Layout untuk field dinamis contoh data
+                    ->columns(2), 
             ])
-            // statePath akan menentukan di mana data input dinamis ini disimpan di model
-            // Misalnya, jika model punya kolom 'data_surat' dengan cast 'array' atau 'json'
             ->statePath('data'); 
     }
 
@@ -199,17 +195,14 @@ class EditTemplate extends EditRecord
                 ->modalDescription('Ini akan membuat dokumen surat keluar, pastikan data yang Anda masukkan sudah sesuai.')
                 ->modalSubmitActionLabel('Konfirmasi Generate')
                 ->action(function () {
-                    // Akses $this->record untuk model Template yang sedang diedit
-                    $templateRecord = $this->record;
-                    // Akses data form dari $this->data
-                    $formData = $this->data;
-
                     try {
-                        // Data yang diisi di form dinamis berada di $formData['data_surat']
+                        $this->form->validate(); 
+
+                        $templateRecord = $this->record;
+                        $formData = $this->data; 
+
                         $dataSuratFromForm = $formData['data_surat'] ?? [];
 
-                        // Asumsi Admin yang login adalah pembuat surat. Ambil data user admin.
-                        // Jika tidak ada user_id yang terkait, Anda mungkin perlu membuat user dummy atau mengambil dari Auth::user()
                         $adminUser = auth()->user();
                         if (!$adminUser) {
                              Notification::make()
@@ -220,20 +213,17 @@ class EditTemplate extends EditRecord
                             return;
                         }
 
-                        // Prioritaskan nomor surat dari data form
-                        $nomorSurat = 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y") ;
-                        $prodiSurat = $dataSuratFromForm['prodi'] ?? null; // Prodi dari form atau dari user admin
+                        $nomorSurat = $templateRecord->class_name === 'keterangan-aktif-kuliah' || $templateRecord->class_name === 'rekomendasi-beasiswa' ? 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/KM/'. date("Y") : 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y");
+                        $prodiSurat = $dataSuratFromForm['prodi'] ?? null; 
 
                         $pdfPath = null;
                         try {
                             $viewData = [];
-                            // Tambahkan semua isi $dataSuratFromForm langsung ke $viewData
                             foreach ($dataSuratFromForm as $key => $value) {
                                 $viewData[$key] = $value;
                             }
-                            // Tambahkan data dari record Template itu sendiri
                             $viewData['template'] = $templateRecord;
-                            $viewData['user'] = $adminUser; 
+                            $viewData['user'] = $adminUser;
 
                             $pdfContent = view('templates.' . $templateRecord->class_name, $viewData)->render();
 
@@ -249,7 +239,6 @@ class EditTemplate extends EditRecord
                             return;
                         }
 
-                        // Buat record SuratKeluar baru
                         $suratKeluar = \App\Models\SuratKeluar::create([
                             'nomor_surat' => $nomorSurat,
                             'prodi' => $prodiSurat,
@@ -257,18 +246,43 @@ class EditTemplate extends EditRecord
                             'template_id' => $templateRecord->_id,
                             'pengajuan_id' => null, 
                             'metadata' => $dataSuratFromForm,
-                            'is_show' => false 
+                            'is_show' => false
                         ]);
 
                         Notification::make()
                             ->title('Surat Keluar Berhasil Dibuat')
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . asset('storage/' . $pdfFileName) . '" target="_blank" class="underline">Lihat Draf PDF</a>')
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . asset('surat_keluar/' . $pdfFileName) . '" target="_blank" class="underline">Lihat Draf PDF</a>')
                             ->success()
                             ->send();
 
-                        // Redirect ke halaman daftar template
-                        // return redirect()->route('filament.admin.resources.templates.index');
+                        $this->redirect($this->getResource()::getUrl('index'));
 
+                    } catch (ValidationException $e) { 
+                        $errorMessages = $e->errors();
+
+                        // Gabungkan pesan-pesan error menjadi satu string atau daftar
+                        $errorMessageDetail = '<ul>';
+                        foreach ($errorMessages as $field => $messages) { 
+                            if (is_array($messages)) {
+                                foreach ($messages as $message) {
+                                    // Tambahkan nama field ke pesan jika perlu untuk konteks lebih baik
+                                    $displayField = str_replace(['data_surat.', '_'], ['',' '], $field); 
+                                    $errorMessageDetail .= '<li>' . e($message) . '</li>';
+                                }
+                            } else {
+                                // Fallback jika ada pesan yang langsung string (jarang)
+                                $displayField = str_replace(['data_surat.', '_'], ['',' '], $field);
+                                $errorMessageDetail .= '<li>' . ': ' . e($messages) . '</li>';
+                            }
+                        }
+                        $errorMessageDetail .= '</ul>';
+
+                        // Kirim notifikasi dengan detail error
+                        Notification::make()
+                            ->title('Validasi Gagal!')
+                            ->body(new HtmlString('Ada beberapa kolom yang harus diisi atau tidak valid:<br>' . $errorMessageDetail)) 
+                            ->danger()
+                            ->send();
                     } catch (\Exception $e) {
                         Notification::make()
                             ->title('Gagal Membuat Surat Keluar')
