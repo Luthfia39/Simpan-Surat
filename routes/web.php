@@ -59,7 +59,7 @@ Route::get('/user/oauth/callback/google', function () {
         }
     } catch (\Exception $e) {
         \Log::error('Google OAuth error: ' . $e->getMessage());
-        return redirect('/login')->withErrors('Login Google gagal, silakan coba lagi.');
+        return redirect('/user/login')->withErrors('Login Google gagal, silakan coba lagi.');
     }
     
 });
