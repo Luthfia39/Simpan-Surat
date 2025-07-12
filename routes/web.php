@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Filament\Facades\Filament;
 
+Route::view('/', 'welcome');
+
 Route::get('/auth/google/redirect', function () {
     return Socialite::driver('google')->redirect();
 });
@@ -53,7 +55,7 @@ Route::get('/user/oauth/callback/google', function () {
             return redirect('/admin');
         } else {
             // Redirect ke dashboard panel user
-            return redirect('/');
+            return redirect('/user');
         }
     } catch (\Exception $e) {
         \Log::error('Google OAuth error: ' . $e->getMessage());
@@ -90,16 +92,9 @@ Route::middleware('api')->prefix('api')->group(function () {
                     ]);
                 }
             } else {
-                // Handle cases where 'processed_documents' might be missing or not an array
-                // (e.g., if the Python script didn't detect any documents or sent an old format)
                 Log::warning('DARI HOOK: "processed_documents" tidak ditemukan atau bukan array. Data:', $data);
-                
-                // You might choose to still create a record for the whole PDF
-                // or return an error based on your application logic.
-                // For now, let's assume if it's missing, it's an error from Python's side.
                 return response()->json(['error' => 'Invalid data format: "processed_documents" missing or malformed'], 400);
             }
-
             return response()->json(['message' => 'Data diterima dan disimpan'], 200);
         } catch (\Exception $e) {
             Log::error('Error di hook: ' . $e->getMessage() . ' | Request Data: ' . json_encode($request->all()));
