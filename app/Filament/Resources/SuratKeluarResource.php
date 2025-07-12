@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use App\Models\Template;
 
 use App\Enums\Major;
 use Carbon\Carbon;
@@ -55,17 +56,14 @@ class SuratKeluarResource extends Resource
                 TextColumn::make('No')
                     ->rowIndex()
                     ->alignCenter(),
-
                 TextColumn::make('nomor_surat')
                     ->label('Nomor Surat')
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('template.name')
                     ->label('Jenis Surat')
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('metadata.prodi')
                     ->label('Program Studi')
                     ->getStateUsing(function ($record) {
@@ -88,22 +86,17 @@ class SuratKeluarResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('created_at')
                     ->label('Waktu Pembuatan')
                     ->getStateUsing(function ($record): ?string {
-                        // Jika created_at itu adalah kolom timestamp langsung dari DB
                         if ($record->created_at instanceof \DateTimeInterface) {
-                            // Menggunakan Carbon untuk format lokal
                             return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
                         }
-                        // Jika tanggal ada di extracted_fields (misal 'tanggal' dari OCR)
-                        // dan kamu ingin menggunakan itu, pastikan itu sudah string tanggal yang valid.
                         if (is_array($record->extracted_fields) && isset($record->extracted_fields['tanggal']['text'])) {
                             try {
-                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')->translatedFormat('l, j F Y');
+                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')
+                                ->translatedFormat('l, j F Y');
                             } catch (\Exception $e) {
-                                // Jika parsing gagal, kembalikan teks aslinya atau null
                                 return $record->extracted_at['tanggal']['text'] ?? null;
                             }
                         }
@@ -129,6 +122,23 @@ class SuratKeluarResource extends Resource
                         }
                         return $query;
                     }),
+                    Tables\Filters\SelectFilter::make('jenis_surat')
+                    ->label('Jenis Surat')
+                    ->options(function () {
+                        $templateOptions = Template::all()->where('for_user', true)->pluck('name', '_id')->toArray();
+                    
+                        return array_merge(
+                            ['' => 'Semua Jenis Surat'],
+                            $templateOptions
+                        );
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (isset($data['value']) && !empty($data['value'])) {
+                            $filterValue = trim($data['value']);
+                            $query->where('template_id', $data['value']);
+                        }
+                        return $query;
+                    })
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -142,7 +152,6 @@ class SuratKeluarResource extends Resource
                         Forms\Components\FileUpload::make('final_signed_letter')
                             ->label('Unggah Surat Final')
                             ->helperText('Unggah versi final surat yang sudah ditandatangani basah (PDF).')
-                            // ->directory('surat_keluar') 
                             ->visibility('public')
                             ->acceptedFileTypes(['application/pdf'])
                             ->maxSize(10240) 
@@ -159,7 +168,6 @@ class SuratKeluarResource extends Resource
                             ->required(fn (Forms\Get $get): bool => $get('completion_method') === 'offline_pickup')
                             ->nullable(fn (Forms\Get $get): bool => $get('completion_method') === 'online_upload'),
                         
-                        // Dropdown metode penyelesaian
                         Select::make('completion_method')
                             ->label('Metode Penyelesaian')
                             ->options([
@@ -195,15 +203,18 @@ class SuratKeluarResource extends Resource
                             }
                             $record->save(); 
 
-                            // Update status dan keterangan di model Pengajuan (melalui relasi)
                             $pengajuanTerkait = $record->pengajuan;
                             if ($pengajuanTerkait) {
                                 $pengajuanTerkait->status = 'selesai';
                                 $pengajuanTerkait->keterangan = $data['keterangan_final'];
                                 $pengajuanTerkait->save();
-                                Notification::make()->title('Pengajuan Berhasil Ditandai Selesai')->body('Surat final berhasil diunggah/dicatat dan pengajuan telah ditandai selesai.')->success()->send();
+                                Notification::make()->title('Pengajuan Berhasil Ditandai Selesai')
+                                ->body('Surat final berhasil diunggah/dicatat dan pengajuan telah ditandai selesai.')
+                                ->success()->send();
                             } else {
-                                Notification::make()->title('Peringatan')->body('Surat final berhasil diunggah/dicatat, tetapi tidak ada pengajuan terkait yang ditemukan untuk diupdate statusnya.')->warning()->send();
+                                Notification::make()->title('Peringatan')
+                                ->body('Surat final berhasil diunggah/dicatat, tetapi tidak ada pengajuan terkait yang ditemukan untuk diupdate statusnya.')
+                                ->warning()->send();
                             }
 
                         } catch (\Throwable $e) {
