@@ -637,7 +637,10 @@ class PengajuanResource extends Resource
                         ($record->status !== 'selesai' && $record->status !== 'ditolak')
                     ),
             ])
-            ->bulkActions([ ]);
+            ->bulkActions([ ])
+            ->recordUrl(
+                fn (Pengajuan $record): ?string => null, 
+            );
     }
 
     public static function getRelations(): array
