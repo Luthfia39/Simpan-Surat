@@ -162,7 +162,7 @@ class PengajuanResource extends Resource
 
                         Forms\Components\Section::make('Data Surat')
                             ->description('Isi data spesifik untuk jenis surat yang dipilih.')
-                            ->schema(function (Get $get, ?\App\Models\Pengajuan $record): array {
+                            ->schema(function (Get $get, ?\App\Models\Pengajuan $record, string $operation): array {
                                 $templateId = $get('template_id');
                                 if (!$templateId) {
                                     return [
@@ -308,7 +308,12 @@ class PengajuanResource extends Resource
                                                 $filamentComponent->required();
                                             }
 
-                                            if (in_array($fieldConfig['name'], ['nomor_surat'])) {
+                                            // KUNCI: Kondisi disabled umum untuk non-nomor_surat di edit
+                                            if ($operation === 'edit' && $fieldConfig['name'] !== 'nomor_surat') {
+                                                $filamentComponent->disabled();
+                                            }
+                                            // Nomor surat harusnya hanya visible untuk admin, jadi disabled tidak perlu tumpang tindih
+                                            if ($fieldConfig['name'] === 'nomor_surat') {
                                                 $filamentComponent->visible(fn () => auth()->user()->is_admin);
                                             }
 
