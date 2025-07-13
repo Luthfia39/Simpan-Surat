@@ -85,24 +85,92 @@ class SuratKeluarResource extends Resource
                         return '-';
                     })
                     ->sortable()
-                    ->searchable(),
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        $allMajors = Major::toArray();
+                        $matchingProdiCodes = []; 
+                        
+                        foreach ($allMajors as $code => $name) {
+                            $nameLower = mb_strtolower($name, 'UTF-8');
+                            
+                            if (str_contains($nameLower, $searchLower)) {
+                                $matchingProdiCodes[] = $code; 
+                            }
+                        }
+
+                        foreach ($allMajors as $code => $name) {
+                            $codeLower = mb_strtolower($code, 'UTF-8');
+                            if (str_contains($codeLower, $searchLower) && !in_array($code, $matchingProdiCodes)) {
+                                $matchingProdiCodes[] = $code;
+                            }
+                        }
+                        
+                        if (!empty($matchingProdiCodes)) {
+                            $regexValues = implode('|', array_map(fn($code) => preg_quote($code, '/'), $matchingProdiCodes));
+                            $regexPattern = '/(?i).*"prodi":"(' . $regexValues . ')".*/';
+                            $query->where('metadata', 'regex', $regexPattern);
+                        } else {
+                            $query->whereRaw('1 = 0');
+                        }
+                        
+                        return $query;
+                    }),
                 TextColumn::make('created_at')
                     ->label('Waktu Pembuatan')
                     ->getStateUsing(function ($record): ?string {
                         if ($record->created_at instanceof \DateTimeInterface) {
                             return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
-                        }
-                        if (is_array($record->extracted_fields) && isset($record->extracted_fields['tanggal']['text'])) {
-                            try {
-                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')
-                                ->translatedFormat('l, j F Y');
-                            } catch (\Exception $e) {
-                                return $record->extracted_at['tanggal']['text'] ?? null;
-                            }
-                        }
-                        return '-'; 
+                        }; 
                     })
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+
+                        $query->where(function (Builder $q) use ($searchLower) {
+                            try {
+                                $parsedDate = Carbon::parse($searchLower, 'id');
+                                $q->orWhereDate('created_at', $parsedDate->toDateString());
+                            } catch (\Exception $e) { }
+
+                            if (preg_match('/^\d{4}$/', $searchLower)) {
+                                $q->orWhereYear('created_at', (int)$searchLower);
+                            }
+
+                            $monthMap = [
+                                'januari' => '01', 'jan' => '01',
+                                'februari' => '02', 'feb' => '02',
+                                'maret' => '03', 'mar' => '03',
+                                'april' => '04', 'apr' => '04',
+                                'mei' => '05',
+                                'juni' => '06', 'jun' => '06',
+                                'juli' => '07', 'jul' => '07',
+                                'agustus' => '08', 'agu' => '08',
+                                'september' => '09', 'sep' => '09',
+                                'oktober' => '10', 'okt' => '10',
+                                'november' => '11', 'nov' => '11',
+                                'desember' => '12', 'des' => '12',
+                            ];
+                            $monthNumber = null;
+                            if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 12) {
+                                $monthNumber = (int)$searchLower; 
+                            } elseif (isset($monthMap[$searchLower])) {
+                                $monthNumber = (int)$monthMap[$searchLower]; 
+                            }
+
+                            if ($monthNumber) {
+                                $q->orWhereMonth('created_at', $monthNumber);
+                            }
+
+                            if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 31) {
+                                $dayNumber = (int)$searchLower; 
+                                $q->orWhereDay('created_at', $dayNumber);
+                            }
+                            
+                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%');
+                        });
+
+                        return $query;
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('prodi')
