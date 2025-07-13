@@ -87,12 +87,11 @@ class SuratKeluarResource extends Resource
                     ->sortable()
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         $searchLower = trim(mb_strtolower($search, 'UTF-8'));
-                        $allMajors = Major::toArray();
+                        $allMajors = Major::toArray(); 
                         $matchingProdiCodes = []; 
                         
                         foreach ($allMajors as $code => $name) {
                             $nameLower = mb_strtolower($name, 'UTF-8');
-                            
                             if (str_contains($nameLower, $searchLower)) {
                                 $matchingProdiCodes[] = $code; 
                             }
@@ -108,13 +107,15 @@ class SuratKeluarResource extends Resource
                         if (!empty($matchingProdiCodes)) {
                             $regexValues = implode('|', array_map(fn($code) => preg_quote($code, '/'), $matchingProdiCodes));
                             $regexPattern = '/(?i).*"prodi":"(' . $regexValues . ')".*/';
+                            
                             $query->where('metadata', 'regex', $regexPattern);
                         } else {
-                            $query->whereRaw('1 = 0');
+                            $query->where('_id', '=', null);
                         }
                         
                         return $query;
-                    }),
+                    })
+                    ,
                 TextColumn::make('created_at')
                     ->label('Waktu Pembuatan')
                     ->getStateUsing(function ($record): ?string {
@@ -129,11 +130,12 @@ class SuratKeluarResource extends Resource
                         $query->where(function (Builder $q) use ($searchLower) {
                             try {
                                 $parsedDate = Carbon::parse($searchLower, 'id');
-                                $q->orWhereDate('created_at', $parsedDate->toDateString());
-                            } catch (\Exception $e) { }
+                                $formattedDate = $parsedDate->toDateString();
+                                $q->orWhere('created_at', 'regex', '/' . preg_quote($formattedDate, '/') . '/i');
+                            } catch (\Exception $e) { /* Lanjut */ }
 
                             if (preg_match('/^\d{4}$/', $searchLower)) {
-                                $q->orWhereYear('created_at', (int)$searchLower);
+                                $q->orWhere('created_at', 'regex', "/^{$searchLower}-/i");
                             }
 
                             $monthMap = [
@@ -150,23 +152,22 @@ class SuratKeluarResource extends Resource
                                 'november' => '11', 'nov' => '11',
                                 'desember' => '12', 'des' => '12',
                             ];
-                            $monthNumber = null;
+                            $monthString = null;
                             if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 12) {
-                                $monthNumber = (int)$searchLower; 
+                                $monthString = str_pad($searchLower, 2, '0', STR_PAD_LEFT);
                             } elseif (isset($monthMap[$searchLower])) {
-                                $monthNumber = (int)$monthMap[$searchLower]; 
+                                $monthString = $monthMap[$searchLower];
                             }
-
-                            if ($monthNumber) {
-                                $q->orWhereMonth('created_at', $monthNumber);
+                            if ($monthString) {
+                                $q->orWhere('created_at', 'regex', "/-{$monthString}-/i");
                             }
 
                             if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 31) {
-                                $dayNumber = (int)$searchLower; 
-                                $q->orWhereDay('created_at', $dayNumber);
+                                $dayNumberString = str_pad($searchLower, 2, '0', STR_PAD_LEFT);
+                                $q->orWhere('created_at', 'regex', "/-{$dayNumberString} /i"); 
                             }
                             
-                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%');
+                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%'); 
                         });
 
                         return $query;
