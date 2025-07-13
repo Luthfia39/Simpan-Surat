@@ -38,6 +38,7 @@ use Filament\Forms\Components\FileUpload;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Repeater;
 use Carbon\Carbon;
+use App\Enums\Major;
 
 class PengajuanResource extends Resource
 {
@@ -97,7 +98,6 @@ class PengajuanResource extends Resource
                     ->schema([
                         Forms\Components\Section::make('Informasi Pengajuan')
                             ->schema([
-
                                 Forms\Components\Select::make('user_id')
                                     ->label('Pengaju')
                                     ->relationship('user', 'name')
@@ -117,7 +117,7 @@ class PengajuanResource extends Resource
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(function (Set $set, Get $get) use ($currentUser) {
-                                        $set('data_surat', []); // Reset data_surat
+                                        $set('data_surat', []); 
                                         $set('data_surat.link_files', []);
                                     
                                         $templateId = $get('template_id');
@@ -127,12 +127,12 @@ class PengajuanResource extends Resource
                                                 $currentDataSurat = $get('data_surat') ?? [];
                                     
                                                 foreach ($template->form_schema as $fieldConfig) {
-                                                    $fieldName = $fieldConfig['name']; // Perhatikan, ini tanpa 'data_surat.' prefix
-                                                    $fieldPath = 'data_surat.' . $fieldName; // Ini path lengkap untuk Set
+                                                    $fieldName = $fieldConfig['name']; 
+                                                    $fieldPath = 'data_surat.' . $fieldName; 
                                     
                                                     $defaultValue = '';
                                     
-                                                    switch ($fieldName) { // Cek nama field tanpa prefix 'data_surat.'
+                                                    switch ($fieldName) { 
                                                         case 'nama':
                                                             $defaultValue = $currentUser->name;
                                                             break;
@@ -144,8 +144,11 @@ class PengajuanResource extends Resource
                                                             break;
                                                     }
                                     
-                                                    // Set nilai hanya jika ada default value yang valid dan field belum diisi
-                                                    if ($defaultValue !== '' && (!isset($currentDataSurat[$fieldName]) || $currentDataSurat[$fieldName] === null || $currentDataSurat[$fieldName] === '')) {
+                                                    if ($defaultValue !== '' 
+                                                        && (!isset($currentDataSurat[$fieldName]) 
+                                                        || $currentDataSurat[$fieldName] === null 
+                                                        || $currentDataSurat[$fieldName] === '')
+                                                        ) {
                                                         $set($fieldPath, $defaultValue);
                                                     }
                                                 }
@@ -157,7 +160,7 @@ class PengajuanResource extends Resource
                                     ->preload(),
                             ])->columns(2),
 
-                        Forms\Components\Section::make('Input Data Surat')
+                        Forms\Components\Section::make('Data Surat')
                             ->description('Isi data spesifik untuk jenis surat yang dipilih.')
                             ->schema(function (Get $get, ?\App\Models\Pengajuan $record): array {
                                 $templateId = $get('template_id');
@@ -191,16 +194,12 @@ class PengajuanResource extends Resource
                                         } elseif ($fieldConfig['name'] === 'nomor_surat') {
                                             $filamentComponent = TextInput::make($fieldName)->numeric()->minValue(1);
                                         } 
-                                        
                                         elseif ($fieldConfig['type'] === 'repeater') {
-                                            // Jika tipe adalah 'repeater', kita akan membuat Repeater baru
                                             $subFieldsSchema = [];
-                                            // Iterasi melalui `sub_schema` yang didefinisikan di Template
                                             foreach ($fieldConfig['sub_schema'] ?? [] as $subFieldConfig) {
-                                                $subFieldName = $fieldName . '.' . $subFieldConfig['name']; // Path untuk sub-field (misal: data_surat.kelompok.0.nama)
+                                                $subFieldName = $fieldName . '.' . $subFieldConfig['name']; 
                                                 $subFilamentComponent = null;
 
-                                                // Penanganan tipe input untuk sub-field
                                                 switch ($subFieldConfig['type']) {
                                                     case 'textarea':
                                                         $subFilamentComponent = Textarea::make($subFieldName);
@@ -212,7 +211,6 @@ class PengajuanResource extends Resource
                                                         $subFilamentComponent = DatePicker::make($subFieldName);
                                                         break;
                                                     case 'select':
-                                                        // Handle select options for sub-field if needed
                                                         $subOptions = collect($subFieldConfig['options'] ?? [])->mapWithKeys(function ($option) {
                                                             return [$option['value'] => $option['label']];
                                                         })->toArray();
@@ -224,29 +222,24 @@ class PengajuanResource extends Resource
                                                         break;
                                                 }
 
-                                                if ($subFieldConfig['name'] === 'nim') { // Cek NimInput ada
+                                                if ($subFieldConfig['name'] === 'nim') { 
                                                     $subFilamentComponent = TextInput::make($subFieldName)
                                                         ->placeholder('00/000000/SV/00000')
                                                         ->mask('99/999999/aa/99999')
                                                         ->regex('/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/');
-                                                        // dd($subFilamentComponent);
-                                                } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { // Cek IpkInput ada
+                                                } elseif ($subFieldConfig['name'] === 'ipk' && class_exists(IpkInput::class)) { 
                                                     $subFilamentComponent = IpkInput::make($subFieldName)
                                                         ->validationAttribute('IPK')
                                                         ->format();
                                                 } elseif ($subFieldConfig['name'] === 'thn_akademik') {
-                                                    // $subFilamentComponent = TextInput::make($subFieldName)->mask('9999/9999');
                                                     $filamentComponent = TextInput::make($fieldName)
                                                         ->mask('9999/9999')
                                                         ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                                            // Pastikan state tidak kosong dan mengandung '/'
                                                             if ($state && Str::contains($state, '/')) {
                                                                 $parts = explode('/', $state);
                                                                 $firstYear = (int) $parts[0];
-                                                                // Jika angka pertama valid dan kita sudah punya slash
-                                                                if ($firstYear > 1900 && strlen($parts[0]) === 4) { // Cek tahun masuk akal
+                                                                if ($firstYear > 1900 && strlen($parts[0]) === 4) {
                                                                     $nextYear = $firstYear + 1;
-                                                                    // Set kembali nilai field dengan tahun kedua yang otomatis
                                                                     $set($get('statePath'), $firstYear . '/' . $nextYear);
                                                                 }
                                                             }
@@ -368,85 +361,96 @@ class PengajuanResource extends Resource
                             })
                             ->columns(1),
 
-                            Forms\Components\Section::make('Status dan Keterangan')
-                                ->schema([
-                                    Forms\Components\Select::make('status')
-                                        ->label('Status Pengajuan')
-                                        ->options([
-                                            'pending' => 'Pending',
-                                            'diproses' => 'Diproses',
-                                            'menunggu_ttd' => 'Menunggu Tanda Tangan',
-                                            'selesai' => 'Selesai',
-                                            'ditolak' => 'Ditolak',
-                                        ])
-                                        ->required()
-                                        ->default('pending'),
-                                    Forms\Components\Textarea::make('keterangan_final')
-                                        ->label('Keterangan')
-                                        ->columnSpanFull(),
-                                ])
-                                ->columns(2)
-                                ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'),
-                            Forms\Components\Section::make('Berkas Surat Keluar Final')
-                                ->schema([
-                                    Forms\Components\Placeholder::make('surat_keluar_status')
-                                        ->label('')
-                                        ->content(function (?\App\Models\Pengajuan $record) {
-                                            if ($record && ($record->suratKeluar || ($record->suratKeluar && !empty($record->suratKeluar))) && $record->status === 'menunggu_ttd') {
-                                                return 'Mohon ditunggu, surat sedang proses penandatanganan.';
-                                            }
-                                            if ($record && ($record->suratKeluar || ($record->suratKeluar && !empty($record->suratKeluar))) && $record->status === 'selesai') {
-                                                return 'Surat telah tersedia.';
-                                            }
-                                            return 'Belum ada surat keluar.';
-                                        })
-                                        ->visibleOn('view')
-                                        ->hiddenOn('create'),
-
-                                    // FileUpload untuk mengupload surat yang sudah ditandatangani
-                                    FileUpload::make('pdf_url') // Langsung binding ke relasi suratKeluar dan kolom pdf_url
-                                        ->label('Upload Surat Keluar Final (Sudah Ditandatangani)')
-                                        ->helperText('Unggah versi final surat yang sudah ditandatangani basah disini.')
-                                        ->directory('surat_keluar') // Direktori baru untuk PDF final
-                                        ->visibility('public')
-                                        ->acceptedFileTypes(['application/pdf']) 
-                                        ->maxSize(5120) 
-                                        ->preserveFilenames() 
-                                        ->downloadable()
-                                        ->openable()
-                                        // Visible hanya jika statusnya 'diproses' atau 'menunggu_ttd' dan ada surat yang digenerate
-                                        ->visible(function (Get $get, ?\App\Models\Pengajuan $record, string $operation): bool { // <-- Tambahkan 'string $operation' di sini
-                                            $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists;
-                                            $status = $get('status');
-                            
-                                            return auth()->user()->is_admin
-                                                && in_array($status, ['menunggu_ttd', 'selesai'])
-                                                && $suratKeluarExists
-                                                && $operation === 'edit'; 
-                                        }),
-
-                                    // Aksi download PDF yang sudah diupload/generate
-                                    Forms\Components\Actions::make([
-                                        Forms\Components\Actions\Action::make('downloadFinalPdf') 
-                                            ->label('Download PDF Surat Final')
-                                            ->icon('heroicon-o-arrow-down-tray')
-                                            ->color('primary')
-                                            ->url(function (?\App\Models\Pengajuan $record): string {
-                                                if ($record && $record->suratKeluar && $record->suratKeluar->pdf_url) {
-                                                    return asset('/storage/surat_keluar/' . $record->suratKeluar->pdf_url);
-                                                }
-                                                return '#';
-                                            })
-                                            ->openUrlInNewTab()
-                                            ->visible(function (?\App\Models\Pengajuan $record, string $operation): bool {
-                                                // Tampilkan tombol download jika ada URL PDF di suratKeluar
-                                                return $record && $record->suratKeluar && $record->suratKeluar->is_show && $operation === 'view' && $record->status === 'selesai';
-                                            }),
+                        Forms\Components\Section::make('Status dan Keterangan')
+                            ->schema([
+                                Forms\Components\Select::make('status')
+                                    ->label('Status Pengajuan')
+                                    ->options([
+                                        'pending' => 'Pending',
+                                        'diproses' => 'Diproses',
+                                        'menunggu_ttd' => 'Menunggu Tanda Tangan',
+                                        'selesai' => 'Selesai',
+                                        'ditolak' => 'Ditolak',
                                     ])
-                                    ->columnSpanFull(), 
+                                    ->required()
+                                    ->default('pending'),
+                                Forms\Components\Textarea::make('keterangan_final')
+                                    ->label('Keterangan')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2)
+                            ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'),
+
+                        Forms\Components\Section::make('Berkas Surat Keluar Final')
+                            ->schema([
+                                Forms\Components\Placeholder::make('surat_keluar_status')
+                                    ->label('')
+                                    ->content(function (?\App\Models\Pengajuan $record) {
+                                        if ($record && ($record->suratKeluar 
+                                            || ($record->suratKeluar 
+                                            && !empty($record->suratKeluar))) 
+                                            && $record->status === 'menunggu_ttd'
+                                            ) {
+                                            return 'Mohon ditunggu, surat sedang proses penandatanganan.';
+                                        }
+                                        if ($record && ($record->suratKeluar 
+                                            || ($record->suratKeluar 
+                                            && !empty($record->suratKeluar))) 
+                                            && $record->status === 'selesai'
+                                            ) {
+                                            return 'Surat telah tersedia.';
+                                        }
+                                        return 'Belum ada surat keluar.';
+                                    })
+                                    ->visibleOn('view')
+                                    ->hiddenOn('create'),
+
+                                
+                                FileUpload::make('pdf_url') 
+                                    ->label('Upload Surat Keluar Final (Sudah Ditandatangani)')
+                                    ->helperText('Unggah versi final surat yang sudah ditandatangani basah disini.')
+                                    ->directory('surat_keluar') 
+                                    ->visibility('public')
+                                    ->acceptedFileTypes(['application/pdf']) 
+                                    ->maxSize(5120) 
+                                    ->preserveFilenames() 
+                                    ->downloadable()
+                                    ->openable()
+                                    ->visible(function (Get $get, ?\App\Models\Pengajuan $record, string $operation): bool { 
+                                        $suratKeluarExists = $record && $record->suratKeluar && $record->suratKeluar->exists;
+                                        $status = $get('status');
+                        
+                                        return auth()->user()->is_admin
+                                            && in_array($status, ['menunggu_ttd', 'selesai'])
+                                            && $suratKeluarExists
+                                            && $operation === 'edit'; 
+                                    }),
+
+                                
+                                Forms\Components\Actions::make([
+                                    Forms\Components\Actions\Action::make('downloadFinalPdf') 
+                                        ->label('Download PDF Surat Final')
+                                        ->icon('heroicon-o-arrow-down-tray')
+                                        ->color('primary')
+                                        ->url(function (?\App\Models\Pengajuan $record): string {
+                                            if ($record && $record->suratKeluar && $record->suratKeluar->pdf_url) {
+                                                return asset('/storage/surat_keluar/' . $record->suratKeluar->pdf_url);
+                                            }
+                                            return '#';
+                                        })
+                                        ->openUrlInNewTab()
+                                        ->visible(function (?\App\Models\Pengajuan $record, string $operation): bool {
+                                            return $record 
+                                            && $record->suratKeluar 
+                                            && $record->suratKeluar->is_show 
+                                            && $operation === 'view' 
+                                            && $record->status === 'selesai';
+                                        }),
                                 ])
-                                ->columns(1) // Atur kolom untuk section Berkas Surat Keluar Final menjadi 1
-                                ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'), // Tampilkan section ini hanya untuk admin atau saat view
+                                ->columnSpanFull(), 
+                            ])
+                            ->columns(1) 
+                            ->visible(fn (string $operation) => Auth::user()->is_admin || $operation === 'view'), 
                         ])
                         ->columnSpanFull(),
             ]);
@@ -456,14 +460,122 @@ class PengajuanResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Pengaju')
-                    ->searchable()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('data_surat.nama')
+                    ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['nama'] ?? '-')
+                    ->label('Nama Pengaju')
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        
+                        $regexPattern = '/(?i).*"nama":\s*".*?' . preg_quote($searchLower, '/') . '.*?".*/';
+                        $query->where('data_surat', 'regex', $regexPattern);
+                        
+                        return $query;
+                    }),
+                Tables\Columns\TextColumn::make('data_surat.prodi')
+                    ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['prodi'] ?? '-')
+                    ->label('Prodi')
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        $allMajors = Major::toArray(); 
+                        $matchingProdiCodes = []; 
+                        
+                        foreach ($allMajors as $code => $name) {
+                            $nameLower = mb_strtolower($name, 'UTF-8');
+                            if (str_contains($nameLower, $searchLower)) {
+                                $matchingProdiCodes[] = $code; 
+                            }
+                        }
+
+                        foreach ($allMajors as $code => $name) {
+                            $codeLower = mb_strtolower($code, 'UTF-8');
+                            if (str_contains($codeLower, $searchLower) && !in_array($code, $matchingProdiCodes)) {
+                                $matchingProdiCodes[] = $code;
+                            }
+                        }
+                        
+                        if (!empty($matchingProdiCodes)) {
+                            $regexValues = implode('|', array_map(fn($code) => preg_quote($code, '/'), $matchingProdiCodes));
+                            $regexPattern = '/(?i).*"prodi":"(' . $regexValues . ')".*/';
+                            
+                            $query->where('data_surat', 'regex', $regexPattern);
+                        } else {
+                            $query->where('_id', '=', null);
+                        }
+                        
+                        return $query;
+                    }),
                 Tables\Columns\TextColumn::make('template.name')
                     ->label('Jenis Surat')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Waktu Pengajuan')
+                    ->getStateUsing(function ($record): ?string {
+                        if ($record->created_at instanceof \DateTimeInterface) {
+                            return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
+                        }; 
+                    })
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+
+                        $query->where(function (Builder $q) use ($searchLower) {
+                            $foundMatch = false; 
+
+                            try {
+                                $parsedDate = Carbon::parse($searchLower, 'id');
+                                $q->orWhereDate('created_at', $parsedDate->toDateString());
+                                $foundMatch = true;
+                            } catch (\Exception $e) { }
+
+                            if (preg_match('/^\d{4}$/', $searchLower)) {
+                                $q->orWhereYear('created_at', (int)$searchLower);
+                                $foundMatch = true;
+                            }
+
+                            $monthMap = [
+                                'januari' => '01', 'jan' => '01',
+                                'februari' => '02', 'feb' => '02',
+                                'maret' => '03', 'mar' => '03',
+                                'april' => '04', 'apr' => '04',
+                                'mei' => '05',
+                                'juni' => '06', 'jun' => '06',
+                                'juli' => '07', 'jul' => '07',
+                                'agustus' => '08', 'agu' => '08',
+                                'september' => '09', 'sep' => '09',
+                                'oktober' => '10', 'okt' => '10',
+                                'november' => '11', 'nov' => '11',
+                                'desember' => '12', 'des' => '12',
+                            ];
+                            $monthNumber = null;
+                            if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 12) {
+                                $monthNumber = (int)$searchLower; 
+                            } elseif (isset($monthMap[$searchLower])) {
+                                $monthNumber = (int)$monthMap[$searchLower]; 
+                            }
+                            if ($monthNumber) {
+                                $q->orWhereMonth('created_at', $monthNumber);
+                                $foundMatch = true;
+                            }
+
+                            if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 31) {
+                                $dayNumber = (int)$searchLower; 
+                                $q->orWhereDay('created_at', $dayNumber);
+                                $foundMatch = true;
+                            }
+                            
+                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%');
+                            $foundMatch = true; 
+
+                            if (!$foundMatch) {
+                                $q->where('_id', '=', null); 
+                            }
+                        });
+
+                        return $query;
+                    }),
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
@@ -473,31 +585,6 @@ class PengajuanResource extends Resource
                         'danger' => 'ditolak',
                     ])
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('data_surat.nama')
-                    ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['nama'] ?? '-')
-                    ->label('Nama Pengaju (Surat)')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Tanggal Pengajuan')
-                    ->getStateUsing(function ($record): ?string {
-                        // Jika created_at itu adalah kolom timestamp langsung dari DB
-                        if ($record->created_at instanceof \DateTimeInterface) {
-                            // Menggunakan Carbon untuk format lokal
-                            return Carbon::parse($record->created_at)->locale('id')->translatedFormat('l, j F Y');
-                        }
-                        // Jika tanggal ada di extracted_fields (misal 'tanggal' dari OCR)
-                        // dan kamu ingin menggunakan itu, pastikan itu sudah string tanggal yang valid.
-                        if (is_array($record->extracted_fields) && isset($record->extracted_fields['tanggal']['text'])) {
-                            try {
-                                return Carbon::parse($record->extracted_fields['tanggal']['text'])->locale('id')->translatedFormat('l, j F Y');
-                            } catch (\Exception $e) {
-                                // Jika parsing gagal, kembalikan teks aslinya atau null
-                                return $record->extracted_at['tanggal']['text'] ?? null;
-                            }
-                        }
-                        return '-'; // Default jika tidak ada data
-                    })
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
@@ -521,15 +608,24 @@ class PengajuanResource extends Resource
                         }
                         return $query;
                     }),
+                Tables\Filters\SelectFilter::make('prodi')
+                    ->label('Program Studi')
+                    ->options(
+                        array_merge(
+                            ['' => 'Semua Program Studi'],
+                            array_filter(Major::toArray(), function($value, $key) {
+                                return $key !== null && $key !== '' && $value !== null && $value !== '';
+                            }, ARRAY_FILTER_USE_BOTH)
+                        )
+                    )
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (isset($data['value']) && !empty($data['value'])) {
+                            $filterValue = trim($data['value']);
+                            $query->where('data_surat', 'regex', '/(?i).*"prodi":"' . preg_quote($filterValue, '/') . '".*/');
+                        }
+                        return $query;
+                    }),
             ])
-            ->modifyQueryUsing(function (Builder $query): Builder {
-                // Periksa apakah pengguna yang sedang login adalah admin
-                if (Auth::user() && !Auth::user()->is_admin) {
-                    // Jika bukan admin, filter berdasarkan user_id pengajuan
-                    $query->where('user_id', auth()->user()->id);
-                }
-                return $query;
-            })
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()

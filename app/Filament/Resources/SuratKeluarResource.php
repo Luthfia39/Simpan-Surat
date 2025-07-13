@@ -114,8 +114,7 @@ class SuratKeluarResource extends Resource
                         }
                         
                         return $query;
-                    })
-                    ,
+                    }),
                 TextColumn::make('created_at')
                     ->label('Waktu Pembuatan')
                     ->getStateUsing(function ($record): ?string {
@@ -128,14 +127,17 @@ class SuratKeluarResource extends Resource
                         $searchLower = trim(mb_strtolower($search, 'UTF-8'));
 
                         $query->where(function (Builder $q) use ($searchLower) {
+                            $foundMatch = false; 
+
                             try {
                                 $parsedDate = Carbon::parse($searchLower, 'id');
-                                $formattedDate = $parsedDate->toDateString();
-                                $q->orWhere('created_at', 'regex', '/' . preg_quote($formattedDate, '/') . '/i');
-                            } catch (\Exception $e) { /* Lanjut */ }
+                                $q->orWhereDate('created_at', $parsedDate->toDateString());
+                                $foundMatch = true;
+                            } catch (\Exception $e) { }
 
                             if (preg_match('/^\d{4}$/', $searchLower)) {
-                                $q->orWhere('created_at', 'regex', "/^{$searchLower}-/i");
+                                $q->orWhereYear('created_at', (int)$searchLower);
+                                $foundMatch = true;
                             }
 
                             $monthMap = [
@@ -152,22 +154,29 @@ class SuratKeluarResource extends Resource
                                 'november' => '11', 'nov' => '11',
                                 'desember' => '12', 'des' => '12',
                             ];
-                            $monthString = null;
+                            $monthNumber = null;
                             if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 12) {
-                                $monthString = str_pad($searchLower, 2, '0', STR_PAD_LEFT);
+                                $monthNumber = (int)$searchLower; 
                             } elseif (isset($monthMap[$searchLower])) {
-                                $monthString = $monthMap[$searchLower];
+                                $monthNumber = (int)$monthMap[$searchLower]; 
                             }
-                            if ($monthString) {
-                                $q->orWhere('created_at', 'regex', "/-{$monthString}-/i");
+                            if ($monthNumber) {
+                                $q->orWhereMonth('created_at', $monthNumber);
+                                $foundMatch = true;
                             }
 
                             if (preg_match('/^\d{1,2}$/', $searchLower) && (int)$searchLower >= 1 && (int)$searchLower <= 31) {
-                                $dayNumberString = str_pad($searchLower, 2, '0', STR_PAD_LEFT);
-                                $q->orWhere('created_at', 'regex', "/-{$dayNumberString} /i"); 
+                                $dayNumber = (int)$searchLower; 
+                                $q->orWhereDay('created_at', $dayNumber);
+                                $foundMatch = true;
                             }
                             
-                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%'); 
+                            $q->orWhere('created_at', 'like', '%' . $searchLower . '%');
+                            $foundMatch = true; 
+
+                            if (!$foundMatch) {
+                                $q->where('_id', '=', null); 
+                            }
                         });
 
                         return $query;
