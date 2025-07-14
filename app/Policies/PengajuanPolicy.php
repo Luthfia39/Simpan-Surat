@@ -13,7 +13,10 @@ class PengajuanPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        if ($user->is_admin) {
+            return true; 
+        }
+        return Pengajuan::where('user_id', $user->id);
     }
 
     /**

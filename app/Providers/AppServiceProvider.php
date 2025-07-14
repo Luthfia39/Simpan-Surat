@@ -10,6 +10,9 @@ use App\Policies\SuratKeluarPolicy;
 use App\Policies\PengajuanPolicy;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
+use App\Http\Responses\LogoutResponse;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if (env(key: 'APP_ENV') === 'local' && request()->server(key: 'HTTP_X_FORWARDED_PROTO') === 'https') {
+            URL::forceScheme(scheme: 'https');
+        };
+        $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
     }
 
     /**
@@ -36,5 +42,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-pengajuan', [PengajuanPolicy::class, 'view']);
         Gate::define('create-pengajuan', [PengajuanPolicy::class, 'create']);
         Gate::define('edit-pengajuan', [PengajuanPolicy::class, 'update']);
+        Gate::define('viewAny-pengajuan', [PengajuanPolicy::class, 'viewAny']);
     }
 }
