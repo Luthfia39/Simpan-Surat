@@ -81,22 +81,20 @@ class EditSuratMasuks extends EditRecord
     {
         return $form
             ->schema([
-                // \Filament\Forms\Components\Hidden::make('extracted_fields')->default([]),
                 Select::make('letter_type')->label('Jenis Surat')->options([
                     'Surat Pernyataan' => 'Surat Pernyataan',
                     'Surat Keterangan' => 'Surat Keterangan',
                     'Surat Tugas' => 'Surat Tugas',
                     'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
                 ])
-                ->createOptionForm([ // Ini adalah form yang akan muncul saat membuat opsi baru
-                    TextInput::make('letter_type') // Nama field untuk input kota baru
+                ->createOptionForm([ 
+                    TextInput::make('letter_type') 
                         ->label('Jenis Surat Lainnya')
                         ->required()
-                        // ->unique('your_cities_table', 'name') // Ganti 'your_cities_table' dan 'name' dengan tabel dan kolom kota Anda
                         ->maxLength(255),
                 ])
                 ->createOptionUsing(function (array $data) { 
-                    return $data['letter_type']; // Ini nilai yang akan dipilih di Select
+                    return $data['letter_type']; 
                 })
                 ->required(),
             ])
@@ -124,37 +122,30 @@ class EditSuratMasuks extends EditRecord
         $this->ocr= $ocr_final;
         $this->annotations= $annotations;
         try {
-            $this->record->save(); // Simpan langsung model ke DB
-            \Log::info('Livewire: Document saved to database from updateDocumentOcrAndAnnotations.', ['id' => $this->record->id]);
-
-            // Dispatch event untuk frontend (loading indicator, render highlight)
+            $this->record->save(); 
+            \Log::info('Livewire: Document saved to database from updateDocumentOcrAndAnnotations.', 
+            ['id' => $this->record->id]);
             $this->dispatch('document-update-completed');
             Notification::make()->title('Perubahan berhasil disimpan!')->success()->send();
         } catch (\Exception $e) {
-            \Log::error('Livewire: Error saving document from updateDocumentOcrAndAnnotations:', ['error' => $e->getMessage(), 'id' => $this->record->id]);
+            \Log::error('Livewire: Error saving document from updateDocumentOcrAndAnnotations:', 
+            ['error' => $e->getMessage(), 'id' => $this->record->id]);
             Notification::make()->title('Gagal menyimpan perubahan: ' . $e->getMessage())->danger()->send();
         }
     }
 
     public function onProcessSave(): void {
-        // Validasi form dasar Filament di halaman ini
         $this->form->validate();
-        $formData = $this->form->getState(); // Ambil data dari form fields (misal letter_type)
+        $formData = $this->form->getState(); 
 
-        // Perbarui model dengan data dari form (letter_type)
         $this->record->fill([
             'letter_type' => $formData['letter_type'],
         ]);
 
         $this->record->review_status = 'reviewed'; 
-        
-        // OCR text dan annotations sudah di-update dan disimpan secara real-time oleh updateDocumentOcrAndAnnotations
-        // Jadi, cukup panggil save() pada model $this->record
         $this->record->save();
-
-        Notification::make()->title('Review OCR untuk Dokumen ' . $this->record->document_index . ' berhasil disimpan!')->success()->send();
-        
-        // Redirect kembali ke halaman daftar setelah selesai review satu dokumen
+        Notification::make()->title('Review OCR untuk Dokumen ' . 
+        $this->record->document_index . ' berhasil disimpan!')->success()->send();
         $this->redirect(SuratMasukResource::getUrl('index'));
     }
 }

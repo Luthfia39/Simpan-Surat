@@ -28,6 +28,7 @@ use Filament\Forms\Components\Select;
 use App\Filament\Pages\ReviewOCR;
 
 use Illuminate\Support\Facades\Auth;
+use App\Enums\Major;
 
 class SuratMasukResource extends Resource
 {
@@ -74,12 +75,6 @@ class SuratMasukResource extends Resource
     {
         return $table
             ->columns([
-                // TextColumn::make('task_id')
-                //     ->label('Task ID')
-                //     ->searchable()
-                //     ->sortable()
-                //     ->toggleable(isToggledHiddenByDefault: true),
-
                 BadgeColumn::make('review_status')
                     ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
                     ->label('Status Review')
@@ -91,17 +86,20 @@ class SuratMasukResource extends Resource
                     ])
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('nomor_surat')
                     ->label('Nomor Surat')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
+                        (is_string($record->extracted_fields) 
+                        && ($decodedFields = json_decode($record->extracted_fields, true)) 
+                        && is_array($decodedFields) && isset($decodedFields['nomor_surat']['text']))
                         ? $decodedFields['nomor_surat']['text']
                         : null
                     )
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        return $query->where('extracted_fields', 'like', '%' . $search . '%');
+                    })
                     ->sortable(),
-
                 TextColumn::make('letter_type')
                     ->label('Jenis Surat')
                     ->formatStateUsing(fn (string $state): string => ucwords(str_replace('_', ' ', $state)))
@@ -114,34 +112,42 @@ class SuratMasukResource extends Resource
                     })
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('pengirim')
                     ->label('Pengirim/Penerima')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['penerima_surat']['text']))
+                        (is_string($record->extracted_fields) 
+                        && ($decodedFields = json_decode($record->extracted_fields, true)) 
+                        && is_array($decodedFields) && isset($decodedFields['penerima_surat']['text']))
                         ? $decodedFields['penerima_surat']['text']
                         : null
                     )
                     ->default('-')
                     ->width('w-px')
-                    ->limit($keteranganLimit = 20) // Memotong teks setelah 50 karakter
-                    ->tooltip(function (string $state) use ($keteranganLimit): ?string { // Gunakan 'use' untuk membawa variabel ke closure
-                        // Tampilkan tooltip hanya jika teks lebih panjang dari batas yang kita tetapkan
+                    ->limit($keteranganLimit = 20)
+                    ->tooltip(function (string $state) use ($keteranganLimit): ?string { 
                         if (strlen($state) > $keteranganLimit) {
                             return $state;
                         }
                         return null;
                     })
-                    ->searchable(),
-
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        return $query->where('extracted_fields', 'like', '%' . $search . '%');
+                    }),
                 TextColumn::make('created_at')
                     ->label('Tanggal Dibuat')
                     ->getStateUsing(fn (Model $record): ?string => 
-                        (is_string($record->extracted_fields) && ($decodedFields = json_decode($record->extracted_fields, true)) && is_array($decodedFields) && isset($decodedFields['tanggal']['text']))
+                        (is_string($record->extracted_fields) 
+                        && ($decodedFields = json_decode($record->extracted_fields, true)) 
+                        && is_array($decodedFields) && isset($decodedFields['tanggal']['text']))
                         ? $decodedFields['tanggal']['text']
                         : null
                     )
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $searchLower = trim(mb_strtolower($search, 'UTF-8'));
+                        return $query->where('extracted_fields', 'like', '%' . $search . '%');
+                    }),
             ])
             ->filters([
                 SelectFilter::make('letter_type')
@@ -158,7 +164,24 @@ class SuratMasukResource extends Resource
                         'pending_review' => 'Belum Direview',
                         'in_review' => 'Sedang Direview',
                         'reviewed' => 'Sudah Direview',
-                    ])
+                    ]),
+                // SelectFilter::make('prodi')
+                //     ->label('Program Studi')
+                //     ->options(
+                //         array_merge(
+                //             ['' => 'Semua Program Studi'],
+                //             array_filter(Major::toArray(), function($value, $key) {
+                //                 return $key !== null && $key !== '' && $value !== null && $value !== '';
+                //             }, ARRAY_FILTER_USE_BOTH)
+                //         )
+                //     )
+                //     ->query(function (Builder $query, array $data): Builder {
+                //         if (isset($data['value']) && !empty($data['value'])) {
+                //             $filterValue = trim($data['value']);
+                //             $query->where('extracted_fields', 'like', 'like', '%' . $filterValue . '%');
+                //         }
+                //         return $query;
+                //     }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

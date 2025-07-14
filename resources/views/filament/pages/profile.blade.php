@@ -14,7 +14,7 @@
                     </x-filament::button>
                 @else
                     <x-filament::button type="button" wire:click="editProfile">
-                        Ubah
+                        Ubah Profil
                     </x-filament::button>
                 @endif
             </div>

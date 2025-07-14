@@ -27,10 +27,8 @@ class SuratOverview extends ChartWidget
     protected function getFilters(): ?array
     {
         $tahunSekarang = now()->year;
-        $rangeTahun = range($tahunSekarang - 5, $tahunSekarang + 1); // Tahun dari 2020 - 2026
+        $rangeTahun = range($tahunSekarang - 5, $tahunSekarang + 1);
         $options = array_combine($rangeTahun, $rangeTahun);
-
-        // dd($options);
 
         return $options;
     }
@@ -42,7 +40,6 @@ class SuratOverview extends ChartWidget
 
         $suratMasukData = [];
         $suratKeluarData = [];
-        $pengajuanData = [];
 
         foreach ($bulan as $index => $namaBulan) {
             $month = $index + 1;
@@ -54,13 +51,9 @@ class SuratOverview extends ChartWidget
             $keluar = SuratKeluar::whereYear('created_at', $tahun)
                 ->whereMonth('created_at', $month)
                 ->count();
-            $pengajuan = Pengajuan::whereYear('created_at', $tahun)
-                ->whereMonth('created_at', $month)
-                ->count();
 
             $suratMasukData[] = $masuk;
             $suratKeluarData[] = $keluar;
-            $pengajuanData[] = $pengajuan;
         }
 
         return [

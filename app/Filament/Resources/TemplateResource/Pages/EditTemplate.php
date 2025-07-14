@@ -38,7 +38,6 @@ class EditTemplate extends EditRecord
     {
         return $form
             ->schema([
-                // Bagian ini akan menampilkan input-input dinamis
                 Section::make('Data Surat ' . ($this->record->name ? $this->record->name :''))
                     ->description('Silakan isi data yang dibutuhkan untuk surat ini.')
                     ->schema(function (\App\Models\Template $record): array {
@@ -74,7 +73,6 @@ class EditTemplate extends EditRecord
                             } elseif ($fieldConfig['name'] === 'nip') {
                                 $filamentComponent = TextInput::make($fieldName)->minLength(18)->mask('999999999999999999');
                             }
-                            
                             elseif ($fieldConfig['type'] === 'repeater') {
                                 $subFieldsSchema = [];
                                 foreach ($fieldConfig['sub_schema'] ?? [] as $subFieldConfig) {
@@ -197,25 +195,15 @@ class EditTemplate extends EditRecord
                 ->action(function () {
                     try {
                         $this->form->validate(); 
-
                         $templateRecord = $this->record;
                         $formData = $this->data; 
-
                         $dataSuratFromForm = $formData['data_surat'] ?? [];
 
-                        $adminUser = auth()->user();
-                        if (!$adminUser) {
-                             Notification::make()
-                                ->title('Error')
-                                ->body('Pengguna tidak terautentikasi.')
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        $nomorSurat = $templateRecord->class_name === 'keterangan-aktif-kuliah' || $templateRecord->class_name === 'rekomendasi-beasiswa' ? 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/KM/'. date("Y") : 'NO.'. ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y");
+                        $nomorSurat = $templateRecord->class_name === 'keterangan-aktif-kuliah' || 
+                         $templateRecord->class_name === 'rekomendasi-beasiswa' ? 'NO.'.
+                         ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/KM/'. date("Y") : 'NO.'.
+                         ($dataSuratFromForm['nomor_surat'] ?? 'AUTO')  . '/UN1/SV.2-TEDI/AKM/PJ/'. date("Y");
                         $prodiSurat = $dataSuratFromForm['prodi'] ?? null; 
-
                         $pdfPath = null;
                         try {
                             $viewData = [];
@@ -227,15 +215,14 @@ class EditTemplate extends EditRecord
 
                             $pdfContent = view('templates.' . $templateRecord->class_name, $viewData)->render();
 
-                            $pdfFileName = 'surat_keluar_' . Str::slug($templateRecord->name) . '_' . Str::slug($dataSuratFromForm['nama'] ?? 'unknown') . '_' . time() . '.pdf';
+                            $pdfFileName = 'surat_keluar_' . Str::slug($templateRecord->name) . '_' . 
+                            Str::slug($dataSuratFromForm['nama'] ?? 'unknown') . '_' . time() . '.pdf';
                             Storage::disk('public')->put('surat_keluar/' . $pdfFileName, Pdf::loadHTML($pdfContent)->output());
 
                         } catch (\Exception $e) {
-                             Notification::make()
-                                ->title('Gagal Membuat PDF')
+                             Notification::make()->title('Gagal Membuat PDF')
                                 ->body('Terjadi kesalahan saat merender PDF: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
+                                ->danger()->send();
                             return;
                         }
 
@@ -251,36 +238,35 @@ class EditTemplate extends EditRecord
 
                         Notification::make()
                             ->title('Surat Keluar Berhasil Dibuat')
-                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. <a href="' . asset('surat_keluar/' . $pdfFileName) . '" target="_blank" class="underline">Lihat Draf PDF</a>')
-                            ->success()
-                            ->send();
+                            ->body('Nomor Surat: ' . $nomorSurat . ' telah dibuat. 
+                            <a href="' . asset('surat_keluar/' . $pdfFileName) . '" target="_blank" 
+                            class="underline">Lihat Draf PDF</a>')->success()->send();
 
                         $this->redirect($this->getResource()::getUrl('index'));
 
                     } catch (ValidationException $e) { 
                         $errorMessages = $e->errors();
 
-                        // Gabungkan pesan-pesan error menjadi satu string atau daftar
                         $errorMessageDetail = '<ul>';
                         foreach ($errorMessages as $field => $messages) { 
                             if (is_array($messages)) {
                                 foreach ($messages as $message) {
-                                    // Tambahkan nama field ke pesan jika perlu untuk konteks lebih baik
                                     $displayField = str_replace(['data_surat.', '_'], ['',' '], $field); 
                                     $errorMessageDetail .= '<li>' . e($message) . '</li>';
                                 }
                             } else {
-                                // Fallback jika ada pesan yang langsung string (jarang)
                                 $displayField = str_replace(['data_surat.', '_'], ['',' '], $field);
                                 $errorMessageDetail .= '<li>' . ': ' . e($messages) . '</li>';
                             }
                         }
                         $errorMessageDetail .= '</ul>';
 
-                        // Kirim notifikasi dengan detail error
                         Notification::make()
                             ->title('Validasi Gagal!')
-                            ->body(new HtmlString('Ada beberapa kolom yang harus diisi atau tidak valid:<br>' . $errorMessageDetail)) 
+                            ->body(new HtmlString(
+                                'Ada beberapa kolom yang harus diisi atau tidak valid:<br>' 
+                                . $errorMessageDetail
+                                )) 
                             ->danger()
                             ->send();
                     } catch (\Exception $e) {

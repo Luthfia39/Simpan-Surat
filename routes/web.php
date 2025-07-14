@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Filament\Facades\Filament;
 
-Route::view('/', 'welcome');
+Route::view('/', 'welcome')->name('welcome');
 
 Route::get('/auth/google/redirect', function () {
     return Socialite::driver('google')->redirect();
@@ -59,7 +59,7 @@ Route::get('/user/oauth/callback/google', function () {
         }
     } catch (\Exception $e) {
         \Log::error('Google OAuth error: ' . $e->getMessage());
-        return redirect('/user/login')->withErrors('Login Google gagal, silakan coba lagi.');
+        return redirect('/')->withErrors('Login Google gagal, silakan coba lagi.');
     }
     
 });

@@ -39,15 +39,13 @@ class ViewSuratKeluar extends ViewRecord
 
                 TextEntry::make('Prodi')
                     ->getStateUsing(function ($record) {
-                        // Mengakses kode prodi dari metadata
                         $prodiCode = $record->metadata['prodi'] ?? null;
 
-                        // Mengambil nama lengkap dari enum jika kode prodi ada
                         if ($prodiCode) {
-                            return Major::getNameByCode($prodiCode) ?? $prodiCode; // Fallback ke kode jika nama tidak ditemukan
+                            return Major::getNameByCode($prodiCode) ?? $prodiCode; 
                         }
 
-                        return '-'; // Jika kode prodi tidak ada
+                        return '-'; 
                     }),
 
                 // ⬇️ Bagian untuk download PDF

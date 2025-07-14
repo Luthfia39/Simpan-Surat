@@ -71,12 +71,12 @@
                             );
                         },
                         init() {
-                            console.log('--- Alpine x-data scope initialized! ---');
+                            console.log('--- Alpine x-data scope initialized! ---', this.ocr);
                             
                             // Watcher untuk properti 'ocr' di Alpine
                             this.$watch('ocr', (newOcr) => {
                                 if (newOcr) {
-                                    console.log('OCR property changed in Alpine! Re-rendering highlights.');
+                                    console.log('OCR property changed in Alpine! Re-rendering highlights.', newOcr);
                                     this.$nextTick(() => {
                                         // Pastikan ocrContentDiv terdefinisi sebelum memanggil renderHighlights
                                         ocrContentDiv = document.getElementById('ocr-content'); 
@@ -252,19 +252,14 @@
                     return;
                 }
     
-                // Langkah 1: Reset DOM ocrContentDiv ke konten OCR MURNI
-                // Ambil dari parameter atau dari Alpine Scope
                 const alpineDataScope = Alpine.$data(ocrContentDiv.closest('[x-data]'));
                 const ocrToUse = initialOcrHtml !== null ? initialOcrHtml : alpineDataScope.ocr;
                 
-                // Pastikan ini benar-benar menghapus highlight sebelum mengisi HTML
-                // Seharusnya ocrToUse sudah bersih dari tag <mark> dari watcher input Alpine
                 ocrContentDiv.innerHTML = ocrToUse;
                 
-                // Langkah 2: Hitung plainTextContent dari DOM yang sudah bersih
-                plainTextContent = (ocrContentDiv.textContent || ocrContentDiv.innerText || "").replace(/\r\n|\r/g, '\n'); // Normalize newlines
+                plainTextContent = (ocrContentDiv.textContent || ocrContentDiv.innerText || "")
+                .replace(/\r\n|\r/g, '\n'); 
     
-                // Langkah 3: Bangun ulang peta node teks dari DOM aktual (setelah bersih)
                 textNodes = [];
                 let accumulatedLength = 0;
     
@@ -282,7 +277,8 @@
                     });
                     accumulatedLength += node.nodeValue.length;
                 }
-                console.log('[initTextNodes] Completed. plainTextContent length:', plainTextContent.length, 'textNodes count:', textNodes.length);
+                console.log('[initTextNodes] Completed. plainTextContent length:', 
+                plainTextContent.length, 'textNodes count:', textNodes.length);
             }
     
             // Fungsi untuk membungkus teks dengan tag <mark> pada posisi tertentu
@@ -293,23 +289,17 @@
                     return;
                 }
                 if (start < 0 || start + length > plainTextContent.length) {
-                    console.error(`[wrapTextByPosition] Invalid range: start=${start}, length=${length}. plainTextContent length: ${plainTextContent.length}. Skipping.`);
+                    console.error(`[wrapTextByPosition] Invalid range: start=${start}, length=${length}. 
+                    plainTextContent length: ${plainTextContent.length}. Skipping.`);
                     return;
                 }
-
-                // --- Logika yang Lebih Robust untuk Mencari Range ---
-                // Kita perlu menemukan titik awal dan akhir Range dalam struktur DOM asli,
-                // bukan hanya dari peta textNodes yang mungkin memiliki "celah".
-
-                let charIndex = 0; // Melacak indeks karakter absolut di DOM
+                let charIndex = 0; 
                 let rangeStartFound = false;
                 let rangeEndFound = false;
-                let rangeToHighlight = document.createRange(); // Range yang akan kita gunakan
-
-                // Mendapatkan semua node di dalam ocrContentDiv (termasuk non-teks)
+                let rangeToHighlight = document.createRange();
                 const walker = document.createTreeWalker(
                     ocrContentDiv,
-                    NodeFilter.SHOW_ALL, // SHOW_ALL untuk melihat semua node, bukan hanya TEXT
+                    NodeFilter.SHOW_ALL, 
                     null
                 );
 
@@ -317,53 +307,32 @@
                 while ((currentNode = walker.nextNode())) {
                     if (currentNode.nodeType === Node.TEXT_NODE) {
                         const nodeLength = currentNode.nodeValue.length;
-
-                        // Cek jika start highlight berada di node ini
                         if (!rangeStartFound && start >= charIndex && start <= (charIndex + nodeLength)) {
                             rangeToHighlight.setStart(currentNode, start - charIndex);
                             rangeStartFound = true;
                         }
-
-                        // Cek jika end highlight berada di node ini
-                        if (rangeStartFound && (start + length) >= charIndex && (start + length) <= (charIndex + nodeLength)) {
+                        if (rangeStartFound && (start + length) >= charIndex 
+                            && (start + length) <= (charIndex + nodeLength)) {
                             rangeToHighlight.setEnd(currentNode, (start + length) - charIndex);
                             rangeEndFound = true;
                         }
-                        
-                        charIndex += nodeLength; // Tambahkan panjang teks ke indeks karakter
+                        charIndex += nodeLength; 
                     } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
-                        // Tangani elemen yang mungkin memengaruhi offset teks, seperti <br> atau spasi tambahan
-                        // Ini bisa menjadi sumber utama inkonsistensi antara plainTextContent dan DOM visual
                         if (currentNode.tagName === 'BR') {
-                            charIndex += 1; // Untuk <br>, anggap itu sebagai 1 karakter newline di plainTextContent
-                        } else if (currentNode.tagName === 'P' || currentNode.tagName === 'DIV') {
-                            // Untuk tag block, bisa jadi ada 1 atau 2 newlines yang tidak ada di textContent
-                            // Ini sangat tergantung pada bagaimana plainTextContent dihitung.
-                            // Jika plainTextContent dibuat dari textContent, maka ini mungkin sudah tertangani.
-                        }
-                        // Penting: Jika ada elemen yang menyisipkan spasi atau karakter, itu harus disinkronkan dengan plainTextContent
+                            charIndex += 1; 
+                        } else if (currentNode.tagName === 'P' || currentNode.tagName === 'DIV') { }
                     }
-
-                    if (rangeStartFound && rangeEndFound) {
-                        break; // Kedua titik ditemukan, keluar dari loop
-                    }
+                    if (rangeStartFound && rangeEndFound) { break; }
                 }
-
                 if (!rangeStartFound || !rangeEndFound) {
-                    console.warn(`[wrapTextByPosition] FINAL FAIL: Could not determine full range for Text: "${textToHighlight}", start: ${start}, length: ${length}. Range might span complex DOM.`);
-                    return; // Tidak dapat menemukan titik awal atau akhir yang valid dalam DOM
+                    console.warn(`[wrapTextByPosition] FINAL FAIL: Could not determine full range for Text: 
+                    "${textToHighlight}", start: ${start}, length: ${length}. Range might span complex DOM.`);
+                    return; 
                 }
 
                 try {
-                    // --- Optional Guard (Jika Anda ingin mencegah penumpukan visual) ---
-                    // Namun, jika initTextNodes() sudah memastikan DOM selalu bersih, ini tidak diperlukan.
-                    // Jika Anda tetap melihat masalah tumpukan, ini bisa menjadi penyebab.
-                    if (rangeToHighlight.commonAncestorContainer.closest && rangeToHighlight.commonAncestorContainer.closest('mark')) {
-                        console.warn("[wrapTextByPosition] Skipping highlight: part already marked or inside an existing mark (this should not happen if DOM is perfectly clean).");
-                        // return; // Hapus return jika Anda ingin tetap memaksa highlight (dan mungkin menimpa)
-                    }
-                    // --- End Optional Guard ---
-
+                    if (rangeToHighlight.commonAncestorContainer.closest 
+                    && rangeToHighlight.commonAncestorContainer.closest('mark')) { }
                     const mark = document.createElement("mark");
                     mark.setAttribute("data-type", type);
                     mark.style.backgroundColor = typeColors[type] || "#ccc"; 
@@ -403,8 +372,9 @@
                 // 3. Ubah annotations menjadi array dan urutkan berdasarkan posisi 'start' secara DESCENDING
                 const sortedAnnotations = Object.entries(annotationsObject)
                     .map(([key, data]) => ({ key, ...data }))
-                    .filter(a => typeof a.start === 'number' && typeof a.length === 'number' && typeof a.text === 'string' && a.text.length > 0)
-                    .sort((a, b) => b.start - a.start); // Urutkan dari akhir ke awal untuk menghindari masalah offset
+                    .filter(a => typeof a.start === 'number' && typeof a.length === 'number' 
+                    && typeof a.text === 'string' && a.text.length > 0)
+                    .sort((a, b) => b.start - a.start); 
     
                 console.log('[renderHighlights] Sorted Annotations:', sortedAnnotations);
     
@@ -506,13 +476,11 @@
                 modalOverlay.appendChild(modalContent);
                 document.body.appendChild(modalOverlay);
     
-                // Tambahkan event listener untuk tombol Batal di modal
                 const cancelButton = modalOverlay.querySelector('button[onclick="closeAnnotationModal()"]');
                 if (cancelButton) {
                     cancelButton.addEventListener('click', closeAnnotationModal);
                 }
 
-                // Tutup modal ketika overlay diklik
                 modalOverlay.addEventListener("click", (e) => {
                     if (e.target === modalOverlay) {
                         closeAnnotationModal();
@@ -539,10 +507,8 @@
                         console.log("Selection Range:", range.startContainer, range.startOffset, range.endContainer, range.endOffset);
                         const parentMark = range.commonAncestorContainer.closest?.("mark");
     
-                        // Kita tetap tampilkan modal, tapi beri peringatan jika ada highlight
                         if (parentMark) {
                             console.warn("Seleksi sebagian atau seluruhnya berada di dalam highlight yang sudah ada. Akan tetap menampilkan modal.");
-                            // Anda bisa tambahkan alert di sini jika perlu: alert("Seleksi Anda tumpang tindih dengan highlight yang sudah ada.");
                         }
     
                         currentSelection = {
