@@ -465,7 +465,7 @@ class PengajuanResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('data_surat.nama')
+                TextColumn::make('data_surat.nama')
                     ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['nama'] ?? '-')
                     ->label('Nama Pengaju')
                     ->sortable()
@@ -477,7 +477,7 @@ class PengajuanResource extends Resource
                         
                         return $query;
                     }),
-                Tables\Columns\TextColumn::make('data_surat.prodi')
+                TextColumn::make('data_surat.prodi')
                     ->getStateUsing(fn (Pengajuan $record): string => $record->data_surat['prodi'] ?? '-')
                     ->label('Prodi')
                     ->sortable()
@@ -511,7 +511,7 @@ class PengajuanResource extends Resource
                         
                         return $query;
                     }),
-                Tables\Columns\TextColumn::make('template.name')
+                TextColumn::make('template.name')
                     ->label('Jenis Surat')
                     ->searchable()
                     ->sortable(),
@@ -643,6 +643,12 @@ class PengajuanResource extends Resource
                     ),
             ])
             ->bulkActions([ ])
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                if (Auth::user() && !Auth::user()->is_admin) {
+                    $query->where('user_id', auth()->user()->id);
+                }
+                return $query;
+            })
             ->recordUrl(
                 fn (Pengajuan $record): ?string => null, 
             );
