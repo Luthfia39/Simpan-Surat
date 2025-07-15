@@ -67,7 +67,6 @@ class Profile extends Page implements HasForms
                     ->rules([ 
                         'required',
                         'string',
-                        'size:17', 
                         'regex:/^\d{2}\/\d{6}\/[A-Z]{2}\/\d{5}$/', 
                     ]),
                 Select::make('prodi')
