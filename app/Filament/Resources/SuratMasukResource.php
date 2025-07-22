@@ -67,7 +67,13 @@ class SuratMasukResource extends Resource
                         'Surat Tugas' => 'Surat Tugas',
                         'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
                     ])
-                    ->required(),
+                    ->required()
+                    ->createOptionForm([ 
+                        TextInput::make('letter_type') 
+                            ->label('Jenis Surat Lainnya')
+                            ->required()
+                            ->maxLength(255),
+                    ]),
             ]);
     }
 

@@ -77,31 +77,6 @@ class EditSuratMasuks extends EditRecord
         ]);
     }
 
-    public function form(\Filament\Forms\Form $form): \Filament\Forms\Form
-    {
-        return $form
-            ->schema([
-                Select::make('letter_type')->label('Jenis Surat')->options([
-                    'Surat Pernyataan' => 'Surat Pernyataan',
-                    'Surat Keterangan' => 'Surat Keterangan',
-                    'Surat Tugas' => 'Surat Tugas',
-                    'Surat Rekomendasi Beasiswa' => 'Surat Rekomendasi Beasiswa',
-                ])
-                ->createOptionForm([ 
-                    TextInput::make('letter_type') 
-                        ->label('Jenis Surat Lainnya')
-                        ->required()
-                        ->maxLength(255),
-                ])
-                ->createOptionUsing(function (array $data) { 
-                    return $data['letter_type']; 
-                })
-                ->required(),
-            ])
-            ->model($this->record)
-            ->statePath('data');
-    }
-
     public function getFormActions(): array
     {
         return [
