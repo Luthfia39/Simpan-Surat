@@ -23,7 +23,7 @@
     @script
         <script>
             Livewire.on('reload-page', () => {
-                window.location.href = '/profile';
+                window.location.href = '/user/profile';
             });
         </script>
     @endscript
